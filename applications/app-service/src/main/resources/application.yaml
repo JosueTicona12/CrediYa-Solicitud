@@ -1,0 +1,51 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: "CrediYa_Sol"
+  devtools:
+    add-properties: false
+  h2:
+    console:
+      enabled: true
+      path: "/h2"
+  profiles:
+    include: null
+  datasource:
+    url: "jdbc:h2:mem:test"
+    username: "sa"
+    password: "pass"
+    driverClassName: "org.h2.Driver"
+  jpa:
+    databasePlatform: "org.hibernate.dialect.H2Dialect"
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,prometheus"
+  endpoint:
+    health:
+      probes:
+        enabled: true
+cors:
+  allowed-origins: "http://localhost:4200,http://localhost:8080"
+
+routes:
+  paths:
+    usuarios: "/api/v1/solicitud"
+    usuariosById: "/api/v1/solicitud/{id}"
+
+adapters:
+  r2dbc:
+    host: "localhost"
+    port: 5432
+    database: "postgres"
+    schema: "crediya_auth"
+    username: "postgres"
+    password: "73657869"
+
+logging:
+  level:
+    root: INFO
+    co.com.autenticacion: TRACE
+    org.springframework.r2dbc: DEBUG
