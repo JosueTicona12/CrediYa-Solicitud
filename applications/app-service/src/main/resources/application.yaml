@@ -32,8 +32,8 @@ cors:
 
 routes:
   paths:
-    usuarios: "/api/v1/solicitud"
-    usuariosById: "/api/v1/solicitud/{id}"
+    solicitudes: "/api/v1/solicitudes"
+    solicitudesById: "/api/v1/solicitudes/{id}"
 
 adapters:
   r2dbc:

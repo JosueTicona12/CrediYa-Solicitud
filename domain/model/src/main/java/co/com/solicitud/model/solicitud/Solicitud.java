@@ -1,14 +1,22 @@
 package co.com.solicitud.model.solicitud;
-import lombok.Builder;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.*;
+
+import java.time.LocalDate;
 //import lombok.NoArgsConstructor;
-import lombok.Setter;
+
 
 @Getter
 @Setter
-//@NoArgsConstructor
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
 public class Solicitud {
+
+    private Long id;
+    private Integer monto;
+    private LocalDate plazo;
+    private String email;
+    private Long idestado;
+    private Long idtipoprestamo;
+
 }
