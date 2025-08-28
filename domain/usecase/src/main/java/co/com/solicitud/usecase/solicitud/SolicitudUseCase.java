@@ -1,44 +1,64 @@
 package co.com.solicitud.usecase.solicitud;
 
 import co.com.solicitud.model.solicitud.Solicitud;
+import co.com.solicitud.model.solicitud.dto.SolicitudCreacionDTO;
 import co.com.solicitud.model.solicitud.gateways.SolicitudRepository;
+import co.com.solicitud.model.solicitud.port.UsuarioPort;
 import exceptions.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDate;
+
 @RequiredArgsConstructor
 @Log
 public class SolicitudUseCase {
 
     private final SolicitudRepository solicitudRepository;
+    private final UsuarioPort usuarioPort;
 
-    public Mono<Solicitud> saveServicio(Solicitud solicitud) {
-        log.info("UseCase - Guardando solicitud");
+    public Mono<Solicitud> crearSolicitud(SolicitudCreacionDTO creacion) {
 
-        if (solicitud == null) {
-            return Mono.error(new SolicitudValidationException("El servicio no puede ser nulo"));
+        if (creacion.documento() == null || creacion.documento().isBlank()) {
+            return Mono.error(new SolicitudValidationException("El documento es obligatorio"));
         }
-        if (solicitud.getMonto() == null || solicitud.getMonto().describeConstable().isEmpty()) {
-            return Mono.error(new SolicitudValidationException("El monto es obligatorio"));
+        if (creacion.monto() == null || creacion.monto() <= 0) {
+            return Mono.error(new SolicitudValidationException("El monto debe ser > 0"));
         }
-        if (solicitud.getPlazo() == null) {
-            return Mono.error(new SolicitudValidationException("El plazo es obligatorio"));
+        if (creacion.plazo() == null || !creacion.plazo().isAfter(java.time.LocalDate.now())) {
+            return Mono.error(new SolicitudValidationException("El plazo debe ser una fecha futura"));
         }
-        if (solicitud.getEmail() == null || solicitud.getEmail().isBlank()) {
-            return Mono.error(new SolicitudValidationException("El correo electronico es obligatorio"));
-        }
-        return solicitudRepository.findByEmail(solicitud.getEmail())
-                .flatMap(existing -> Mono.<Solicitud>error(
-                        new SolicitudException("Ya existe un solicitud registrado con el email: " + solicitud.getEmail())
-                ))
-                .switchIfEmpty(solicitudRepository.save(solicitud)) // si no existe, lo guarda
-                .doOnSuccess(u -> log.info("Solicitud guardado con éxito"))
-                .doOnError(e -> log.severe("Error guardando solicitud: {}" + e.getMessage()));
+
+        return usuarioPort.getByDocumento(creacion.documento())
+                .switchIfEmpty(Mono.error(new SolicitudNotFoundException(creacion.documento())))
+                .flatMap(usuarioAuth -> {
+                    if (usuarioAuth.activo() == null || usuarioAuth.activo() == 0L) {
+                        return Mono.error(new SolicitudException("El usuario está inactivo"));
+                    }
+
+                    final String email = usuarioAuth.email();
+                    if (email == null || email.isBlank()) {
+                        return Mono.error(new SolicitudValidationException("El usuario no tiene email válido"));
+                    }
+                    return solicitudRepository.findByEmail(email)
+                            .flatMap(ex -> Mono.<Solicitud>error(
+                                    new SolicitudException("Ya existe una solicitud registrada con el email: " + email)
+                            ))
+                            .switchIfEmpty(Mono.defer(() -> {
+                                Solicitud solicitud = new Solicitud();
+                                solicitud.setMonto(creacion.monto());
+                                solicitud.setPlazo(creacion.plazo());
+                                solicitud.setEmail(email);
+                                solicitud.setIdestado(creacion.idestado());
+                                solicitud.setIdtipoprestamo(1L); // estado inicial (ejemplo)
+                                return solicitudRepository.save(solicitud);
+                            }));
+                });
     }
 
-    public Mono<Solicitud> updateServicio(Solicitud solicitud, Long id) {
+    public Mono<Solicitud> updateSolicitud(Solicitud solicitud, Long id) {
 
         log.info("UseCase - Actualizando solicitud con id {}");
 
@@ -64,14 +84,14 @@ public class SolicitudUseCase {
                 .doOnError(e -> log.severe("Error actualizando solicitud con id {" + id + "}"));
     }
 
-    public Flux<Solicitud> getAllServicio() { log.info("UseCase - Buscar todos los usuarios");
+    public Flux<Solicitud> getAllSolicitud() { log.info("UseCase - Buscar todos los usuarios");
 
         return solicitudRepository.findAll()
                 .switchIfEmpty(Flux.error(new SolicitudException("No se encontraron solicitudes")))
                 .doOnComplete(() -> log.info("Consulta de solicitudes completada"))
                 .doOnError(e -> log.severe("Error consultando todas las solicitudes: " + e)); }
 
-    public Mono<Solicitud> getServicioById(Long id) {
+    public Mono<Solicitud> getSolicitudById(Long id) {
         log.info("UseCase - Buscar solicitud por id {" + id + "}");
 
         if (id == null) {
@@ -83,7 +103,7 @@ public class SolicitudUseCase {
                 .doOnSuccess(u -> log.info("Solicitud encontrada: {" + u + "}"))
                 .doOnError(e -> log.severe("Error buscando solicitud con id {" + id + "}: " + e)); }
 
-    public Mono<Void> deleteServicio(Long id) {
+    public Mono<Void> deleteSolicitud(Long id) {
         log.info("UseCase - Eliminando solicitud con id {" + id + "}");
 
         if (id == null) {

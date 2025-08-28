@@ -2,8 +2,6 @@ package co.com.solicitud.model.solicitud;
 import lombok.*;
 
 import java.time.LocalDate;
-//import lombok.NoArgsConstructor;
-
 
 @Getter
 @Setter
@@ -18,5 +16,4 @@ public class Solicitud {
     private String email;
     private Long idestado;
     private Long idtipoprestamo;
-
 }

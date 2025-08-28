@@ -3,6 +3,7 @@ package co.com.solicitud.api;
 import co.com.solicitud.api.config.ErrorResponse;
 import co.com.solicitud.api.config.SuccessResponse;
 import co.com.solicitud.model.solicitud.Solicitud;
+import co.com.solicitud.model.solicitud.dto.SolicitudCreacionDTO;
 import co.com.solicitud.usecase.solicitud.SolicitudUseCase;
 import exceptions.SolicitudDeleteException;
 import exceptions.SolicitudNotFoundException;
@@ -17,6 +18,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -25,21 +27,15 @@ public class Handler {
 
     private final SolicitudUseCase solicitudUseCase;
 
-    public Mono<ServerResponse> listenSaveSolicitud(ServerRequest request) {
-        log.trace("Handler - Recibida petición de guardado para solicitud");
-
-        return request.bodyToMono(Solicitud.class)
-                .flatMap(solicitudUseCase::saveServicio)
-                .flatMap(u -> {
-                    SuccessResponse response = SuccessResponse.builder()
-                            .timestamp(LocalDateTime.now())
-                            .status(201)
-                            .message("Solicitud creada correctamente")
-                            .build();
-                    return ServerResponse.status(201)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .bodyValue(response);
-                });
+    public Mono<ServerResponse> listenSaveSolicitud(ServerRequest req) {
+        return req.bodyToMono(SolicitudCreacionDTO.class)
+                .flatMap(solicitudUseCase::crearSolicitud)
+                .flatMap(saved -> ServerResponse.status(201)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(saved))
+                .onErrorResume(e -> ServerResponse.badRequest()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(Map.of("error", e.getMessage())));
     }
 
     public Mono<ServerResponse> listenUpdateSolicitud(ServerRequest request) {
@@ -47,7 +43,7 @@ public class Handler {
         log.trace("Handler - Recibida petición de actualización para solicitud con id={}", id);
 
         return request.bodyToMono(Solicitud.class)
-                .flatMap(usuario -> solicitudUseCase.updateServicio(usuario, Long.valueOf(id)))
+                .flatMap(usuario -> solicitudUseCase.updateSolicitud(usuario, Long.valueOf(id)))
                 .flatMap(u -> {
                     SuccessResponse response = SuccessResponse.builder()
                             .timestamp(LocalDateTime.now())
@@ -70,7 +66,7 @@ public class Handler {
 
         return ServerResponse.ok()
                 .contentType(MediaType.TEXT_EVENT_STREAM)
-                .body(solicitudUseCase.getAllServicio(), Solicitud.class)
+                .body(solicitudUseCase.getAllSolicitud(), Solicitud.class)
                 .onErrorResume(Exception.class,
                         e -> buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), request));
     }
@@ -79,7 +75,7 @@ public class Handler {
         String id = request.pathVariable("id");
         log.trace("Handler - Recibida petición de obtener solicitud con id={}", id);
 
-        return solicitudUseCase.getServicioById(Long.valueOf(id))
+        return solicitudUseCase.getSolicitudById(Long.valueOf(id))
                 .flatMap(usuario -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(usuario))
@@ -91,7 +87,7 @@ public class Handler {
         String id = request.pathVariable("id");
         log.trace("Handler - Recibida petición de eliminar solicitud con id={}", id);
 
-        return solicitudUseCase.deleteServicio(Long.valueOf(id))
+        return solicitudUseCase.deleteSolicitud(Long.valueOf(id))
                 .then(ServerResponse.noContent().build())
                 .onErrorResume(SolicitudNotFoundException.class,
                         e -> buildErrorResponse(HttpStatus.NOT_FOUND, e.getMessage(), request))

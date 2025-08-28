@@ -1,144 +1,157 @@
 package co.com.solicitud.usecase.solicitud;
 
 import co.com.solicitud.model.solicitud.Solicitud;
+import co.com.solicitud.model.solicitud.dto.SolicitudCreacionDTO;
+import co.com.solicitud.model.solicitud.dto.UsuarioDTO;
 import co.com.solicitud.model.solicitud.gateways.SolicitudRepository;
+import co.com.solicitud.model.solicitud.port.UsuarioPort;
 import exceptions.SolicitudException;
 import exceptions.SolicitudNotFoundException;
 import exceptions.SolicitudValidationException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.LocalDate;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SolicitudTest {
     @Mock
     private SolicitudRepository solicitudRepository;
 
+    @Mock
+    private UsuarioPort usuarioPort;
+
     @InjectMocks
-    private SolicitudUseCase solicitudUseCase;
+    private SolicitudUseCase useCase;
 
-    private Solicitud solicitud;
-
-    @BeforeEach
-    void setUp() {
-        solicitud = new Solicitud();
-        solicitud.setId(1L);
-        solicitud.setMonto(5000);
-        solicitud.setPlazo(LocalDate.now().plusMonths(6));
-        solicitud.setEmail("test@correo.com");
-        solicitud.setIdestado(1L);
-        solicitud.setIdtipoprestamo(2L);
+    private static SolicitudCreacionDTO buildOkDTO() {
+        return new SolicitudCreacionDTO(
+                "73657869",
+                10_000,
+                LocalDate.now().plusDays(5),
+                1L,
+                1L
+        );
     }
 
     @Test
-    void saveServicio_success() {
-        when(solicitudRepository.findByEmail(solicitud.getEmail())).thenReturn(Mono.empty());
-        when(solicitudRepository.save(any(Solicitud.class))).thenReturn(Mono.just(solicitud));
+    void crearSolicitud_ok() {
+        // Arrange
+        var dto = buildOkDTO();
+        var usuario = new UsuarioDTO(1L, "Josue", "Ticona", "user@test.com", 1L);
 
-        StepVerifier.create(solicitudUseCase.saveServicio(solicitud))
-                .expectNext(solicitud)
+        when(usuarioPort.getByDocumento(dto.documento())).thenReturn(Mono.just(usuario));
+        when(solicitudRepository.findByEmail(usuario.email())).thenReturn(Mono.empty());
+        when(solicitudRepository.save(any(Solicitud.class)))
+                .thenAnswer(inv -> Mono.just((Solicitud) inv.getArgument(0)));
+
+        // Act & Assert
+        StepVerifier.create(useCase.crearSolicitud(dto))
+                .expectNextMatches(s -> s.getEmail().equals("user@test.com")
+                        && s.getMonto().equals(10_000)
+                        && s.getPlazo().isAfter(LocalDate.now())
+                        && s.getIdestado().equals(1L)
+                        && s.getIdtipoprestamo().equals(1L))
                 .verifyComplete();
+
+        verify(usuarioPort).getByDocumento(dto.documento());
+        verify(solicitudRepository).findByEmail("user@test.com");
+        verify(solicitudRepository).save(any(Solicitud.class));
+        verifyNoMoreInteractions(usuarioPort, solicitudRepository);
     }
 
     @Test
-    void saveServicio_invalidEmail() {
-        solicitud.setEmail(" ");
+    void crearSolicitud_errorDocumentoObligatorio() {
+        var dto = new SolicitudCreacionDTO(
+                "  ", 10_000, LocalDate.now().plusDays(1), 2L, 1L
+        );
 
-        StepVerifier.create(solicitudUseCase.saveServicio(solicitud))
+        StepVerifier.create(useCase.crearSolicitud(dto))
                 .expectError(SolicitudValidationException.class)
                 .verify();
+
+        verifyNoInteractions(usuarioPort, solicitudRepository);
     }
 
     @Test
-    void updateServicio_success() {
-        when(solicitudRepository.findById(1L)).thenReturn(Mono.just(solicitud));
-        when(solicitudRepository.save(any(Solicitud.class))).thenReturn(Mono.just(solicitud));
+    void crearSolicitud_errorMontoInvalido() {
+        var dto = new SolicitudCreacionDTO(
+                "73657869", 0, LocalDate.now().plusDays(1), 2L, 1L
+        );
 
-        StepVerifier.create(solicitudUseCase.updateServicio(solicitud, 1L))
-                .expectNextMatches(s -> s.getMonto().equals(5000))
-                .verifyComplete();
+        StepVerifier.create(useCase.crearSolicitud(dto))
+                .expectError(SolicitudValidationException.class)
+                .verify();
+
+        verifyNoInteractions(usuarioPort, solicitudRepository);
     }
 
     @Test
-    void updateServicio_notFound() {
-        when(solicitudRepository.findById(1L)).thenReturn(Mono.empty());
+    void crearSolicitud_errorPlazoNoFuturo() {
+        var dto = new SolicitudCreacionDTO(
+                "73657869", 10_000, LocalDate.now(), 2L, 1L
+        );
 
-        StepVerifier.create(solicitudUseCase.updateServicio(solicitud, 1L))
+        StepVerifier.create(useCase.crearSolicitud(dto))
+                .expectError(SolicitudValidationException.class)
+                .verify();
+
+        verifyNoInteractions(usuarioPort, solicitudRepository);
+    }
+
+    @Test
+    void crearSolicitud_errorUsuarioNoEncontrado() {
+        var dto = buildOkDTO();
+
+        when(usuarioPort.getByDocumento(dto.documento())).thenReturn(Mono.empty());
+
+        StepVerifier.create(useCase.crearSolicitud(dto))
                 .expectError(SolicitudNotFoundException.class)
                 .verify();
+
+        verify(usuarioPort).getByDocumento(dto.documento());
+        verifyNoMoreInteractions(usuarioPort);
+        verifyNoInteractions(solicitudRepository);
     }
 
     @Test
-    void getAllServicio_success() {
-        when(solicitudRepository.findAll()).thenReturn(Flux.just(solicitud));
+    void crearSolicitud_errorUsuarioSinEmail() {
+        var dto = buildOkDTO();
+        var usuarioSinEmail = new UsuarioDTO(2L, "  ", " ", "", 1L);
 
-        StepVerifier.create(solicitudUseCase.getAllServicio())
-                .expectNext(solicitud)
-                .verifyComplete();
+        when(usuarioPort.getByDocumento(dto.documento())).thenReturn(Mono.just(usuarioSinEmail));
+
+        StepVerifier.create(useCase.crearSolicitud(dto))
+                .expectError(SolicitudValidationException.class)
+                .verify();
+
+        verify(usuarioPort).getByDocumento(dto.documento());
+        verifyNoInteractions(solicitudRepository);
     }
 
     @Test
-    void getAllServicio_empty() {
-        when(solicitudRepository.findAll()).thenReturn(Flux.empty());
+    void crearSolicitud_errorEmailDuplicadoEnSolicitudes() {
+        var dto = buildOkDTO();
+        var usuario = new UsuarioDTO(7L, "Josue", "ticona", "taken@test.com", 1L);
 
-        StepVerifier.create(solicitudUseCase.getAllServicio())
+        when(usuarioPort.getByDocumento(dto.documento())).thenReturn(Mono.just(usuario));
+        when(solicitudRepository.findByEmail("taken@test.com"))
+                .thenReturn(Mono.just(new Solicitud()));
+
+        StepVerifier.create(useCase.crearSolicitud(dto))
                 .expectError(SolicitudException.class)
                 .verify();
-    }
 
-    @Test
-    void getServicioById_success() {
-        when(solicitudRepository.findById(1L)).thenReturn(Mono.just(solicitud));
-
-        StepVerifier.create(solicitudUseCase.getServicioById(1L))
-                .expectNext(solicitud)
-                .verifyComplete();
-    }
-
-    @Test
-    void getServicioById_notFound() {
-        when(solicitudRepository.findById(1L)).thenReturn(Mono.empty());
-
-        StepVerifier.create(solicitudUseCase.getServicioById(1L))
-                .expectError(SolicitudNotFoundException.class)
-                .verify();
-    }
-
-    @Test
-    void deleteServicio_success() {
-        when(solicitudRepository.findById(1L)).thenReturn(Mono.just(solicitud));
-        when(solicitudRepository.deleteById(1L)).thenReturn(Mono.empty());
-
-        StepVerifier.create(solicitudUseCase.deleteServicio(1L))
-                .verifyComplete();
-    }
-
-    @Test
-    void findByEmail_success() {
-        when(solicitudRepository.findByEmail("test@correo.com")).thenReturn(Mono.just(solicitud));
-
-        StepVerifier.create(solicitudUseCase.findByEmail("test@correo.com"))
-                .expectNext(solicitud)
-                .verifyComplete();
-    }
-
-    @Test
-    void findByEmail_notFound() {
-        when(solicitudRepository.findByEmail("noexiste@correo.com")).thenReturn(Mono.empty());
-
-        StepVerifier.create(solicitudUseCase.findByEmail("noexiste@correo.com"))
-                .expectError(SolicitudException.class)
-                .verify();
+        verify(usuarioPort).getByDocumento(dto.documento());
+        verify(solicitudRepository).findByEmail("taken@test.com");
+        verifyNoMoreInteractions(usuarioPort, solicitudRepository);
     }
 }

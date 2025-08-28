@@ -1,6 +1,8 @@
 server:
   port: 8080
 spring:
+  codec:
+    max-in-memory-size: 3MB
   application:
     name: "CrediYa_Sol"
   devtools:
@@ -49,3 +51,6 @@ logging:
     root: INFO
     co.com.autenticacion: TRACE
     org.springframework.r2dbc: DEBUG
+
+usuarios:
+  base-url: http://ms-usuarios:8081/api/v1
