@@ -14,7 +14,7 @@ public class SolicitudUseCase {
 
     private final SolicitudRepository solicitudRepository;
 
-    public Mono<Solicitud> saveUser(Solicitud solicitud) {
+    public Mono<Solicitud> saveServicio(Solicitud solicitud) {
         log.info("UseCase - Guardando solicitud");
 
         if (solicitud == null) {
@@ -38,7 +38,7 @@ public class SolicitudUseCase {
                 .doOnError(e -> log.severe("Error guardando solicitud: {}" + e.getMessage()));
     }
 
-    public Mono<Solicitud> updateUser(Solicitud solicitud, Long id) {
+    public Mono<Solicitud> updateServicio(Solicitud solicitud, Long id) {
 
         log.info("UseCase - Actualizando solicitud con id {}");
 
@@ -64,14 +64,14 @@ public class SolicitudUseCase {
                 .doOnError(e -> log.severe("Error actualizando solicitud con id {" + id + "}"));
     }
 
-    public Flux<Solicitud> getAllUsers() { log.info("UseCase - Buscar todos los usuarios");
+    public Flux<Solicitud> getAllServicio() { log.info("UseCase - Buscar todos los usuarios");
 
         return solicitudRepository.findAll()
                 .switchIfEmpty(Flux.error(new SolicitudException("No se encontraron solicitudes")))
                 .doOnComplete(() -> log.info("Consulta de solicitudes completada"))
                 .doOnError(e -> log.severe("Error consultando todas las solicitudes: " + e)); }
 
-    public Mono<Solicitud> getUserById(Long id) {
+    public Mono<Solicitud> getServicioById(Long id) {
         log.info("UseCase - Buscar solicitud por id {" + id + "}");
 
         if (id == null) {
@@ -83,7 +83,7 @@ public class SolicitudUseCase {
                 .doOnSuccess(u -> log.info("Solicitud encontrada: {" + u + "}"))
                 .doOnError(e -> log.severe("Error buscando solicitud con id {" + id + "}: " + e)); }
 
-    public Mono<Void> deleteUser(Long id) {
+    public Mono<Void> deleteServicio(Long id) {
         log.info("UseCase - Eliminando solicitud con id {" + id + "}");
 
         if (id == null) {

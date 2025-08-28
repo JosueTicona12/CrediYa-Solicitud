@@ -22,8 +22,6 @@ import java.time.LocalDateTime;
 @Component
 @RequiredArgsConstructor
 public class Handler {
-//private  final UseCase useCase;
-//private  final UseCase2 useCase2;
 
     private final SolicitudUseCase solicitudUseCase;
 
@@ -31,7 +29,7 @@ public class Handler {
         log.trace("Handler - Recibida petición de guardado para solicitud");
 
         return request.bodyToMono(Solicitud.class)
-                .flatMap(solicitudUseCase::saveUser)
+                .flatMap(solicitudUseCase::saveServicio)
                 .flatMap(u -> {
                     SuccessResponse response = SuccessResponse.builder()
                             .timestamp(LocalDateTime.now())
@@ -49,7 +47,7 @@ public class Handler {
         log.trace("Handler - Recibida petición de actualización para solicitud con id={}", id);
 
         return request.bodyToMono(Solicitud.class)
-                .flatMap(usuario -> solicitudUseCase.updateUser(usuario, Long.valueOf(id)))
+                .flatMap(usuario -> solicitudUseCase.updateServicio(usuario, Long.valueOf(id)))
                 .flatMap(u -> {
                     SuccessResponse response = SuccessResponse.builder()
                             .timestamp(LocalDateTime.now())
@@ -72,7 +70,7 @@ public class Handler {
 
         return ServerResponse.ok()
                 .contentType(MediaType.TEXT_EVENT_STREAM)
-                .body(solicitudUseCase.getAllUsers(), Solicitud.class)
+                .body(solicitudUseCase.getAllServicio(), Solicitud.class)
                 .onErrorResume(Exception.class,
                         e -> buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), request));
     }
@@ -81,7 +79,7 @@ public class Handler {
         String id = request.pathVariable("id");
         log.trace("Handler - Recibida petición de obtener solicitud con id={}", id);
 
-        return solicitudUseCase.getUserById(Long.valueOf(id))
+        return solicitudUseCase.getServicioById(Long.valueOf(id))
                 .flatMap(usuario -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(usuario))
@@ -93,7 +91,7 @@ public class Handler {
         String id = request.pathVariable("id");
         log.trace("Handler - Recibida petición de eliminar solicitud con id={}", id);
 
-        return solicitudUseCase.deleteUser(Long.valueOf(id))
+        return solicitudUseCase.deleteServicio(Long.valueOf(id))
                 .then(ServerResponse.noContent().build())
                 .onErrorResume(SolicitudNotFoundException.class,
                         e -> buildErrorResponse(HttpStatus.NOT_FOUND, e.getMessage(), request))
