@@ -6,6 +6,7 @@ import co.com.solicitud.r2dbc.Entity.SolicitudEntity;
 import co.com.solicitud.r2dbc.helper.ReactiveAdapterOperations;
 import org.reactivecommons.utils.ObjectMapper;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.reactive.TransactionalOperator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -16,13 +17,15 @@ public class SolicitudReactiveRepositoryAdapter extends ReactiveAdapterOperation
         String,
         SolicitudReactiveRepository
 > implements SolicitudRepository {
-    public SolicitudReactiveRepositoryAdapter(SolicitudReactiveRepository repository, ObjectMapper mapper) {
+    private final TransactionalOperator transactionalOperator;
+    public SolicitudReactiveRepositoryAdapter(SolicitudReactiveRepository repository, ObjectMapper mapper, TransactionalOperator transactionalOperator) {
         super(repository, mapper, d -> mapper.map(d, Solicitud.class));
+        this.transactionalOperator = transactionalOperator;
     }
 
     @Override
     public Mono<Solicitud> save(Solicitud usuario) {
-        return super.save(usuario);
+        return transactionalOperator.transactional(super.save(usuario));
     }
 
     @Override
