@@ -14,6 +14,7 @@ public class Solicitud {
     private Integer monto;
     private LocalDate plazo;
     private String email;
+    private String documento;
     private Long idestado;
     private Long idtipoprestamo;
 }

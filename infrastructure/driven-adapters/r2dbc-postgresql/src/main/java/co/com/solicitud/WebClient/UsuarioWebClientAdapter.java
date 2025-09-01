@@ -1,4 +1,4 @@
-package co.com.solicitud.r2dbc.WebClient;
+package co.com.solicitud.WebClient;
 
 import co.com.solicitud.model.solicitud.dto.UsuarioDTO;
 import co.com.solicitud.model.solicitud.port.UsuarioPort;
