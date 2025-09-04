@@ -34,16 +34,10 @@ public class JwtUtil {
         if (role == null) {
             role = jwt.getClaim("role").asString();
         }
-        // Check roles as list
-        List<String> roles = jwt.getClaim("roles").asList(String.class);
-        if (roles != null && roles.stream().anyMatch(r -> "3".equalsIgnoreCase(r))) {
+        if ("3".equals(role)) {
             return true;
         }
-        return "3".equalsIgnoreCase(role);
-    }
-
-    public static String getDocumento(String authHeader) {
-        DecodedJWT jwt = decode(authHeader);
-        return jwt != null ? jwt.getClaim("documento").asString() : null;
+        List<String> roles = jwt.getClaim("roles").asList(String.class);
+        return roles != null && roles.contains("3");
     }
 }

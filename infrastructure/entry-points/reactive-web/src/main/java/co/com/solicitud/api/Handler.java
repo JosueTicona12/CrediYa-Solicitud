@@ -36,13 +36,7 @@ public class Handler {
                     if (!JwtUtil.isClient(authHeader)) {
                         return ServerResponse.status(HttpStatus.UNAUTHORIZED)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .bodyValue(Map.of("error", "Token inválido"));
-                    }
-                    String documento = JwtUtil.getDocumento(authHeader);
-                    if (documento == null || !documento.equals(dto.documento())) {
-                        return ServerResponse.status(HttpStatus.FORBIDDEN)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .bodyValue(Map.of("error", "No autorizado"));
+                                .bodyValue(Map.of("error", "Token inválido: se requiere ser CLIENTE"));
                     }
                     String token = JwtUtil.extractToken(authHeader);
                     return solicitudUseCase.crearSolicitud(dto)
