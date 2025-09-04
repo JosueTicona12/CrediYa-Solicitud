@@ -135,10 +135,11 @@ public class SolicitudUseCase {
                 .switchIfEmpty(Mono.error(new SolicitudNotFoundException(id)))
                 .flatMap(existing -> solicitudRepository.deleteById(id))
                 .doOnSuccess(v -> log.info(SolicitudLogEnum.SOLICITUD_ELIMINADA.message() + id))
-                .doOnError(e -> {
+                .onErrorMap(e -> {
                     log.severe(SolicitudLogEnum.ERROR_ELIMINAR_SOLICITUD.message() + id + ": " + e);
-                    throw new SolicitudDeleteException(id);
-                });
+                    return new SolicitudDeleteException(id);
+                })
+                .doOnSuccess(v -> log.info(SolicitudLogEnum.SOLICITUD_ELIMINADA.message() + id));
     }
 
     public Mono<Solicitud> findByEmail(String email) {

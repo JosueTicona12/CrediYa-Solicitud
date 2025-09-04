@@ -5,9 +5,7 @@ import co.com.solicitud.model.solicitud.SolicitudCreacion;
 import co.com.solicitud.model.solicitud.Usuario;
 import co.com.solicitud.model.solicitud.gateways.SolicitudRepository;
 import co.com.solicitud.model.solicitud.port.UsuarioPort;
-import exceptions.SolicitudException;
-import exceptions.SolicitudNotFoundException;
-import exceptions.SolicitudValidationException;
+import exceptions.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -187,5 +185,243 @@ class SolicitudTest {
 
         verify(solicitudRepository).findByIdestadoIn(List.of(2L));
     }
+    @Test
+    void crearSolicitud_errorTokenNulo() {
+        var dto = buildOkDTO();
+        var usuario = new Usuario(1L, "Josue", "Ticona", "user@test.com", "", 1L);
 
+        when(usuarioPort.getByDocumento(dto.documento())).thenReturn(Mono.just(usuario));
+
+        StepVerifier.create(useCase.crearSolicitud(dto, null))
+                .expectError(SolicitudException.class)
+                .verify();
+
+        verify(usuarioPort).getByDocumento(dto.documento());
+        verifyNoInteractions(solicitudRepository);
+    }
+
+    @Test
+    void crearSolicitud_errorUsuarioInactivo() {
+        var dto = buildOkDTO();
+        var usuarioInactivo = new Usuario(1L, "Josue", "Ticona", "user@test.com", "", 0L);
+
+        when(usuarioPort.getByDocumento(dto.documento())).thenReturn(Mono.just(usuarioInactivo));
+
+        StepVerifier.create(useCase.crearSolicitud(dto, "user@test.com"))
+                .expectError(SolicitudException.class)
+                .verify();
+
+        verify(usuarioPort).getByDocumento(dto.documento());
+        verifyNoInteractions(solicitudRepository);
+    }
+
+    @Test
+    void updateSolicitud_ok() {
+        var input = new Solicitud();
+        input.setMonto(200);
+        input.setEmail("new@test.com");
+        input.setPlazo(LocalDate.now().plusDays(2));
+        input.setIdestado(2L);
+        input.setIdtipoprestamo(3L);
+
+        var existing = new Solicitud();
+        when(solicitudRepository.findById(1L)).thenReturn(Mono.just(existing));
+        when(solicitudRepository.save(any(Solicitud.class))).thenAnswer(inv -> Mono.just(inv.getArgument(0)));
+
+        StepVerifier.create(useCase.updateSolicitud(input, 1L))
+                .expectNextMatches(s -> s.getMonto().equals(200) && s.getEmail().equals("new@test.com")
+                        && s.getPlazo().equals(input.getPlazo())
+                        && s.getIdestado().equals(2L) && s.getIdtipoprestamo().equals(3L))
+                .verifyComplete();
+
+        verify(solicitudRepository).findById(1L);
+        verify(solicitudRepository).save(any(Solicitud.class));
+    }
+
+    @Test
+    void updateSolicitud_errorIdNulo() {
+        StepVerifier.create(useCase.updateSolicitud(new Solicitud(), null))
+                .expectError(SolicitudValidationException.class)
+                .verify();
+        verifyNoInteractions(solicitudRepository);
+    }
+
+    @Test
+    void updateSolicitud_errorSolicitudNula() {
+        StepVerifier.create(useCase.updateSolicitud(null, 1L))
+                .expectError(SolicitudValidationException.class)
+                .verify();
+        verifyNoInteractions(solicitudRepository);
+    }
+
+    @Test
+    void updateSolicitud_errorNoEncontrada() {
+        var solicitud = new Solicitud();
+        when(solicitudRepository.findById(1L)).thenReturn(Mono.empty());
+
+        StepVerifier.create(useCase.updateSolicitud(solicitud, 1L))
+                .expectError(SolicitudNotFoundException.class)
+                .verify();
+
+        verify(solicitudRepository).findById(1L);
+    }
+
+    @Test
+    void updateSolicitud_errorAlGuardar() {
+        var solicitud = new Solicitud();
+        when(solicitudRepository.findById(1L)).thenReturn(Mono.just(new Solicitud()));
+        when(solicitudRepository.save(any(Solicitud.class))).thenReturn(Mono.empty());
+
+        StepVerifier.create(useCase.updateSolicitud(solicitud, 1L))
+                .expectError(SolicitudUpdateException.class)
+                .verify();
+
+        verify(solicitudRepository).findById(1L);
+        verify(solicitudRepository).save(any(Solicitud.class));
+    }
+
+    @Test
+    void getAllSolicitud_ok() {
+        var s1 = new Solicitud();
+        when(solicitudRepository.findAll()).thenReturn(Flux.just(s1));
+
+        StepVerifier.create(useCase.getAllSolicitud())
+                .expectNext(s1)
+                .verifyComplete();
+
+        verify(solicitudRepository).findAll();
+    }
+
+    @Test
+    void getAllSolicitud_sinRegistros() {
+        when(solicitudRepository.findAll()).thenReturn(Flux.empty());
+
+        StepVerifier.create(useCase.getAllSolicitud())
+                .expectError(SolicitudException.class)
+                .verify();
+
+        verify(solicitudRepository).findAll();
+    }
+
+    @Test
+    void getSolicitudesRevision_estadosPorDefecto() {
+        var s1 = new Solicitud();
+        when(solicitudRepository.findByIdestadoIn(List.of(2L,3L,4L))).thenReturn(Flux.just(s1));
+
+        StepVerifier.create(useCase.getSolicitudesRevision(0, 5, null, null))
+                .expectNext(s1)
+                .verifyComplete();
+
+        verify(solicitudRepository).findByIdestadoIn(List.of(2L,3L,4L));
+    }
+
+    @Test
+    void getSolicitudesRevision_sinResultados() {
+        when(solicitudRepository.findByIdestadoIn(List.of(2L))).thenReturn(Flux.empty());
+
+        StepVerifier.create(useCase.getSolicitudesRevision(0, 10, "filtro", List.of(2L)))
+                .expectError(SolicitudException.class)
+                .verify();
+
+        verify(solicitudRepository).findByIdestadoIn(List.of(2L));
+    }
+
+    @Test
+    void getSolicitudById_ok() {
+        var s = new Solicitud();
+        when(solicitudRepository.findById(1L)).thenReturn(Mono.just(s));
+
+        StepVerifier.create(useCase.getSolicitudById(1L))
+                .expectNext(s)
+                .verifyComplete();
+
+        verify(solicitudRepository).findById(1L);
+    }
+
+    @Test
+    void getSolicitudById_idNulo() {
+        StepVerifier.create(useCase.getSolicitudById(null))
+                .expectError(SolicitudValidationException.class)
+                .verify();
+        verifyNoInteractions(solicitudRepository);
+    }
+
+    @Test
+    void getSolicitudById_noEncontrada() {
+        when(solicitudRepository.findById(1L)).thenReturn(Mono.empty());
+
+        StepVerifier.create(useCase.getSolicitudById(1L))
+                .expectError(SolicitudNotFoundException.class)
+                .verify();
+
+        verify(solicitudRepository).findById(1L);
+    }
+
+    @Test
+    void deleteSolicitud_ok() {
+        when(solicitudRepository.findById(1L)).thenReturn(Mono.just(new Solicitud()));
+        when(solicitudRepository.deleteById(1L)).thenReturn(Mono.empty());
+
+        StepVerifier.create(useCase.deleteSolicitud(1L))
+                .verifyComplete();
+
+        verify(solicitudRepository).findById(1L);
+        verify(solicitudRepository).deleteById(1L);
+    }
+
+    @Test
+    void deleteSolicitud_idNulo() {
+        StepVerifier.create(useCase.deleteSolicitud(null))
+                .expectError(SolicitudValidationException.class)
+                .verify();
+        verifyNoInteractions(solicitudRepository);
+    }
+
+    @Test
+    void deleteSolicitud_errorEliminar() {
+        when(solicitudRepository.findById(1L)).thenReturn(Mono.just(new Solicitud()));
+        when(solicitudRepository.deleteById(1L)).thenReturn(Mono.error(new RuntimeException()));
+
+        StepVerifier.create(useCase.deleteSolicitud(1L))
+                .expectError(SolicitudDeleteException.class)
+                .verify();
+
+        verify(solicitudRepository).findById(1L);
+        verify(solicitudRepository).deleteById(1L);
+    }
+
+    @Test
+    void findByEmail_ok() {
+        var s = new Solicitud();
+        when(solicitudRepository.findByEmail("user@test.com")).thenReturn(Mono.just(s));
+
+        StepVerifier.create(useCase.findByEmail("user@test.com"))
+                .expectNext(s)
+                .verifyComplete();
+
+        verify(solicitudRepository).findByEmail("user@test.com");
+    }
+
+    @Test
+    void findByEmail_noExiste() {
+        when(solicitudRepository.findByEmail("missing@test.com")).thenReturn(Mono.empty());
+
+        StepVerifier.create(useCase.findByEmail("missing@test.com"))
+                .expectError(SolicitudException.class)
+                .verify();
+
+        verify(solicitudRepository).findByEmail("missing@test.com");
+    }
+
+    @Test
+    void findByIdestadoIn_ok() {
+        var s = new Solicitud();
+        when(solicitudRepository.findByIdestadoIn(List.of(1L,2L))).thenReturn(Flux.just(s));
+
+        StepVerifier.create(useCase.findByIdestadoIn(List.of(1L,2L)))
+                .expectNext(s)
+                .verifyComplete();
+
+        verify(solicitudRepository).findByIdestadoIn(List.of(1L,2L));
+    }
 }

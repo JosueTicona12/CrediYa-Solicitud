@@ -20,7 +20,7 @@ import static org.mockito.Mockito.when;
 
 
 @WebFluxTest
-@Import({ RouterRest.class, Handler.class, CorsConfig.class, SecurityHeadersConfig.class, ConfigTest.TestBeans.class })
+@Import({ RouterRest.class, Handler.class, SecurityConfig.class, CorsConfig.class, SecurityHeadersConfig.class, ConfigTest.TestBeans.class })
 class ConfigTest {
 
     @Autowired

@@ -33,6 +33,7 @@ import static org.mockito.Mockito.when;
         RouterRestTest.TestApplication.class,
         RouterRest.class,
         Handler.class,
+        SecurityConfig.class,
         RouterRestTest.TestBeans.class
 })
 @WebFluxTest
