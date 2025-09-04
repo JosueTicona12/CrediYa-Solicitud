@@ -1,6 +1,6 @@
 package co.com.solicitud.WebClient;
 
-import co.com.solicitud.model.solicitud.dto.UsuarioDTO;
+import co.com.solicitud.model.solicitud.Usuario;
 import co.com.solicitud.model.solicitud.port.UsuarioPort;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatusCode;
@@ -19,7 +19,7 @@ public class UsuarioWebClientAdapter implements UsuarioPort {
     }
 
     @Override
-    public Mono<UsuarioDTO> getByDocumento(String documento) {
+    public Mono<Usuario> getByDocumento(String documento) {
         return Mono.deferContextual(ctx -> {
             String token = ctx.getOrDefault("authToken", "");
             return usuariosClient.get()
@@ -38,7 +38,7 @@ public class UsuarioWebClientAdapter implements UsuarioPort {
                     .onStatus(HttpStatusCode::is5xxServerError, r ->
                             r.bodyToMono(String.class).flatMap(msg ->
                                     Mono.error(new RuntimeException("Usuarios 5xx: " + msg))))
-                    .bodyToMono(UsuarioDTO.class);
+                    .bodyToMono(Usuario.class);
         });
     }
 

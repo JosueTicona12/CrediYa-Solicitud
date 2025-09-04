@@ -62,6 +62,7 @@ class ConfigTest {
             var p = new SolicitudPath();
             p.setSolicitudes("/api/v1/solicitudes");
             p.setSolicitudesById("/api/v1/solicitudes/{id}");
+            p.setSolicitudesRevision("/api/v1/solicitudes/revision");
             return p;
         }
     }

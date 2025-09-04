@@ -4,7 +4,7 @@ import co.com.solicitud.api.config.ErrorResponse;
 import co.com.solicitud.api.config.SuccessResponse;
 import co.com.solicitud.api.security.JwtUtil;
 import co.com.solicitud.model.solicitud.Solicitud;
-import co.com.solicitud.model.solicitud.dto.SolicitudCreacionDTO;
+import co.com.solicitud.model.solicitud.SolicitudCreacion;
 import co.com.solicitud.usecase.solicitud.SolicitudUseCase;
 import co.com.solicitud.usecase.solicitud.utils.SolicitudErrorEnum;
 import co.com.solicitud.usecase.solicitud.utils.SolicitudLogEnum;
@@ -35,7 +35,7 @@ public class Handler {
 
     public Mono<ServerResponse> listenSaveSolicitud(ServerRequest req) {
         String authHeader = req.headers().firstHeader(HttpHeaders.AUTHORIZATION);
-        return req.bodyToMono(SolicitudCreacionDTO.class)
+        return req.bodyToMono(SolicitudCreacion.class)
                 .flatMap(dto -> {
                     if (!JwtUtil.isClient(authHeader)) {
                         return ServerResponse.status(HttpStatus.UNAUTHORIZED)

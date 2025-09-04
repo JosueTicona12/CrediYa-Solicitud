@@ -1,8 +1,8 @@
 package co.com.solicitud.usecase.solicitud;
 
 import co.com.solicitud.model.solicitud.Solicitud;
-import co.com.solicitud.model.solicitud.dto.SolicitudCreacionDTO;
-import co.com.solicitud.model.solicitud.dto.UsuarioDTO;
+import co.com.solicitud.model.solicitud.SolicitudCreacion;
+import co.com.solicitud.model.solicitud.Usuario;
 import co.com.solicitud.model.solicitud.gateways.SolicitudRepository;
 import co.com.solicitud.model.solicitud.port.UsuarioPort;
 import exceptions.SolicitudException;
@@ -35,8 +35,8 @@ class SolicitudTest {
     @InjectMocks
     private SolicitudUseCase useCase;
 
-    private static SolicitudCreacionDTO buildOkDTO() {
-        return new SolicitudCreacionDTO(
+    private static SolicitudCreacion buildOkDTO() {
+        return new SolicitudCreacion(
                 "73657869",
                 10_000,
                 LocalDate.now().plusDays(5),
@@ -49,7 +49,7 @@ class SolicitudTest {
     void crearSolicitud_ok() {
         // Arrange
         var dto = buildOkDTO();
-        var usuario = new UsuarioDTO(1L, "Josue", "Ticona", "user@test.com", "",1L);
+        var usuario = new Usuario(1L, "Josue", "Ticona", "user@test.com", "",1L);
 
         when(usuarioPort.getByDocumento(dto.documento())).thenReturn(Mono.just(usuario));
         when(solicitudRepository.findByEmail(usuario.email())).thenReturn(Mono.empty());
@@ -73,7 +73,7 @@ class SolicitudTest {
 
     @Test
     void crearSolicitud_errorDocumentoObligatorio() {
-        var dto = new SolicitudCreacionDTO(
+        var dto = new SolicitudCreacion(
                 "  ", 10_000, LocalDate.now().plusDays(1), 2L, 1L
         );
 
@@ -86,7 +86,7 @@ class SolicitudTest {
 
     @Test
     void crearSolicitud_errorMontoInvalido() {
-        var dto = new SolicitudCreacionDTO(
+        var dto = new SolicitudCreacion(
                 "73657869", 0, LocalDate.now().plusDays(1), 2L, 1L
         );
 
@@ -99,7 +99,7 @@ class SolicitudTest {
 
     @Test
     void crearSolicitud_errorPlazoNoFuturo() {
-        var dto = new SolicitudCreacionDTO(
+        var dto = new SolicitudCreacion(
                 "73657869", 10_000, LocalDate.now(), 2L, 1L
         );
 
@@ -128,7 +128,7 @@ class SolicitudTest {
     @Test
     void crearSolicitud_errorUsuarioSinEmail() {
         var dto = buildOkDTO();
-        var usuarioSinEmail = new UsuarioDTO(2L, "  ", " ", "", "",1L);
+        var usuarioSinEmail = new Usuario(2L, "  ", " ", "", "",1L);
 
         when(usuarioPort.getByDocumento(dto.documento())).thenReturn(Mono.just(usuarioSinEmail));
 
@@ -143,7 +143,7 @@ class SolicitudTest {
     @Test
     void crearSolicitud_errorEmailDuplicadoEnSolicitudes() {
         var dto = buildOkDTO();
-        var usuario = new UsuarioDTO(7L, "Josue", "ticona", "taken@test.com", "", 1L);
+        var usuario = new Usuario(7L, "Josue", "ticona", "taken@test.com", "", 1L);
 
         when(usuarioPort.getByDocumento(dto.documento())).thenReturn(Mono.just(usuario));
         when(solicitudRepository.findByEmail("taken@test.com"))
@@ -160,7 +160,7 @@ class SolicitudTest {
     @Test
     void crearSolicitud_errorTokenNoPertenece() {
         var dto = buildOkDTO();
-        var usuario = new UsuarioDTO(1L, "Josue", "Ticona", "user@test.com", "", 1L);
+        var usuario = new Usuario(1L, "Josue", "Ticona", "user@test.com", "", 1L);
 
         when(usuarioPort.getByDocumento(dto.documento())).thenReturn(Mono.just(usuario));
 

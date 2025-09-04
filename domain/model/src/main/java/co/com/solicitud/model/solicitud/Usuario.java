@@ -1,6 +1,6 @@
-package co.com.solicitud.model.solicitud.dto;
+package co.com.solicitud.model.solicitud;
 
-public record UsuarioDTO (
+public record Usuario(
     Long id,
     String nombres,
     String apellidos,

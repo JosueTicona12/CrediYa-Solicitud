@@ -1,8 +1,9 @@
 package co.com.solicitud.api;
 
+import co.com.solicitud.api.config.SecurityConfig;
 import co.com.solicitud.api.config.SolicitudPath;
 import co.com.solicitud.model.solicitud.Solicitud;
-import co.com.solicitud.model.solicitud.dto.SolicitudCreacionDTO;
+import co.com.solicitud.model.solicitud.SolicitudCreacion;
 import co.com.solicitud.usecase.solicitud.SolicitudUseCase;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -10,6 +11,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -24,9 +26,15 @@ import reactor.core.publisher.Mono;
 import java.time.LocalDate;
 import java.util.List;
 
+
 import static org.mockito.Mockito.when;
 
-@ContextConfiguration(classes = {RouterRest.class, Handler.class, RouterRestTest.TestBeans.class})
+@ContextConfiguration(classes = {
+        RouterRestTest.TestApplication.class,
+        RouterRest.class,
+        Handler.class,
+        RouterRestTest.TestBeans.class
+})
 @WebFluxTest
 class RouterRestTest {
 
@@ -35,6 +43,10 @@ class RouterRestTest {
 
     @Autowired
     WebTestClient webTestClient;
+
+    @SpringBootConfiguration
+    static class TestApplication {
+    }
 
     @TestConfiguration
     static class TestBeans {
@@ -95,13 +107,13 @@ class RouterRestTest {
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(Solicitud.class)
-                .value(u -> Assertions.assertThat(u.getEmail()).isEqualTo("u1@test.com"));
+                .value(u -> Assertions.assertThat(u.getEmail()).isEqualTo("juan@test.com"));
     }
 
     @Test
     void postSaveUsuario_ok() {
-        var dto = new SolicitudCreacionDTO(U1.getDocumento(), U1.getMonto(), U1.getPlazo(), U1.getIdestado(), 1L);
-        when(solicitudUseCase.crearSolicitud(ArgumentMatchers.any(SolicitudCreacionDTO.class), ArgumentMatchers.anyString()))
+        var dto = new SolicitudCreacion(U1.getDocumento(), U1.getMonto(), U1.getPlazo(), U1.getIdestado(), 1L);
+        when(solicitudUseCase.crearSolicitud(ArgumentMatchers.any(SolicitudCreacion.class), ArgumentMatchers.anyString()))
                 .thenReturn(Mono.just(U1));
 
         String token = JWT.create()
@@ -113,11 +125,11 @@ class RouterRestTest {
         webTestClient.post()
                 .uri("/api/v1/solicitudes")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-                .header(HttpHeaders.AUTHORIZATION, CLIENT_TOKEN)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(dto)
                 .exchange()
                 .expectStatus().isCreated()
+                .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
                 .expectBody(Solicitud.class)
                 .value(u -> Assertions.assertThat(u.getId()).isEqualTo(1L));
 

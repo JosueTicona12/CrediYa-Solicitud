@@ -1,7 +1,7 @@
 package co.com.solicitud.usecase.solicitud;
 
 import co.com.solicitud.model.solicitud.Solicitud;
-import co.com.solicitud.model.solicitud.dto.SolicitudCreacionDTO;
+import co.com.solicitud.model.solicitud.SolicitudCreacion;
 import co.com.solicitud.model.solicitud.gateways.SolicitudRepository;
 import co.com.solicitud.model.solicitud.port.UsuarioPort;
 import co.com.solicitud.usecase.solicitud.utils.SolicitudErrorEnum;
@@ -22,7 +22,7 @@ public class SolicitudUseCase {
     private final SolicitudRepository solicitudRepository;
     private final UsuarioPort usuarioPort;
 
-    public Mono<Solicitud> crearSolicitud(SolicitudCreacionDTO creacion, String emailToken) {
+    public Mono<Solicitud> crearSolicitud(SolicitudCreacion creacion, String emailToken) {
 
         if (creacion.documento() == null || creacion.documento().isBlank()) {
             return Mono.error(new SolicitudValidationException(SolicitudErrorEnum.DOCUMENTO_OBLIGATORIO.message()));
