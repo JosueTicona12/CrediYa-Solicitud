@@ -13,10 +13,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -47,7 +49,7 @@ class SolicitudTest {
     void crearSolicitud_ok() {
         // Arrange
         var dto = buildOkDTO();
-        var usuario = new UsuarioDTO(1L, "Josue", "Ticona", "user@test.com", 1L);
+        var usuario = new UsuarioDTO(1L, "Josue", "Ticona", "user@test.com", "",1L);
 
         when(usuarioPort.getByDocumento(dto.documento())).thenReturn(Mono.just(usuario));
         when(solicitudRepository.findByEmail(usuario.email())).thenReturn(Mono.empty());
@@ -55,7 +57,7 @@ class SolicitudTest {
                 .thenAnswer(inv -> Mono.just((Solicitud) inv.getArgument(0)));
 
         // Act & Assert
-        StepVerifier.create(useCase.crearSolicitud(dto))
+        StepVerifier.create(useCase.crearSolicitud(dto, "user@test.com"))
                 .expectNextMatches(s -> s.getEmail().equals("user@test.com")
                         && s.getMonto().equals(10_000)
                         && s.getPlazo().isAfter(LocalDate.now())
@@ -75,7 +77,7 @@ class SolicitudTest {
                 "  ", 10_000, LocalDate.now().plusDays(1), 2L, 1L
         );
 
-        StepVerifier.create(useCase.crearSolicitud(dto))
+        StepVerifier.create(useCase.crearSolicitud(dto, "token@test.com"))
                 .expectError(SolicitudValidationException.class)
                 .verify();
 
@@ -88,7 +90,7 @@ class SolicitudTest {
                 "73657869", 0, LocalDate.now().plusDays(1), 2L, 1L
         );
 
-        StepVerifier.create(useCase.crearSolicitud(dto))
+        StepVerifier.create(useCase.crearSolicitud(dto, "token@test.com"))
                 .expectError(SolicitudValidationException.class)
                 .verify();
 
@@ -101,7 +103,7 @@ class SolicitudTest {
                 "73657869", 10_000, LocalDate.now(), 2L, 1L
         );
 
-        StepVerifier.create(useCase.crearSolicitud(dto))
+        StepVerifier.create(useCase.crearSolicitud(dto, "token@test.com"))
                 .expectError(SolicitudValidationException.class)
                 .verify();
 
@@ -114,7 +116,7 @@ class SolicitudTest {
 
         when(usuarioPort.getByDocumento(dto.documento())).thenReturn(Mono.empty());
 
-        StepVerifier.create(useCase.crearSolicitud(dto))
+        StepVerifier.create(useCase.crearSolicitud(dto, "token@test.com"))
                 .expectError(SolicitudNotFoundException.class)
                 .verify();
 
@@ -126,11 +128,11 @@ class SolicitudTest {
     @Test
     void crearSolicitud_errorUsuarioSinEmail() {
         var dto = buildOkDTO();
-        var usuarioSinEmail = new UsuarioDTO(2L, "  ", " ", "", 1L);
+        var usuarioSinEmail = new UsuarioDTO(2L, "  ", " ", "", "",1L);
 
         when(usuarioPort.getByDocumento(dto.documento())).thenReturn(Mono.just(usuarioSinEmail));
 
-        StepVerifier.create(useCase.crearSolicitud(dto))
+        StepVerifier.create(useCase.crearSolicitud(dto, "token@test.com"))
                 .expectError(SolicitudValidationException.class)
                 .verify();
 
@@ -141,13 +143,13 @@ class SolicitudTest {
     @Test
     void crearSolicitud_errorEmailDuplicadoEnSolicitudes() {
         var dto = buildOkDTO();
-        var usuario = new UsuarioDTO(7L, "Josue", "ticona", "taken@test.com", 1L);
+        var usuario = new UsuarioDTO(7L, "Josue", "ticona", "taken@test.com", "", 1L);
 
         when(usuarioPort.getByDocumento(dto.documento())).thenReturn(Mono.just(usuario));
         when(solicitudRepository.findByEmail("taken@test.com"))
                 .thenReturn(Mono.just(new Solicitud()));
 
-        StepVerifier.create(useCase.crearSolicitud(dto))
+        StepVerifier.create(useCase.crearSolicitud(dto, "taken@test.com"))
                 .expectError(SolicitudException.class)
                 .verify();
 
@@ -155,4 +157,35 @@ class SolicitudTest {
         verify(solicitudRepository).findByEmail("taken@test.com");
         verifyNoMoreInteractions(usuarioPort, solicitudRepository);
     }
+    @Test
+    void crearSolicitud_errorTokenNoPertenece() {
+        var dto = buildOkDTO();
+        var usuario = new UsuarioDTO(1L, "Josue", "Ticona", "user@test.com", "", 1L);
+
+        when(usuarioPort.getByDocumento(dto.documento())).thenReturn(Mono.just(usuario));
+
+        StepVerifier.create(useCase.crearSolicitud(dto, "otro@test.com"))
+                .expectError(SolicitudException.class)
+                .verify();
+
+        verify(usuarioPort).getByDocumento(dto.documento());
+        verifyNoInteractions(solicitudRepository);
+    }
+
+    @Test
+    void getSolicitudesRevision_ok() {
+        var s1 = new Solicitud();
+        s1.setEmail("asesor@test.com");
+        s1.setIdestado(2L);
+
+        when(solicitudRepository.findByIdestadoIn(List.of(2L)))
+                .thenReturn(Flux.just(s1));
+
+        StepVerifier.create(useCase.getSolicitudesRevision(0, 10, "asesor", List.of(2L)))
+                .expectNext(s1)
+                .verifyComplete();
+
+        verify(solicitudRepository).findByIdestadoIn(List.of(2L));
+    }
+
 }
