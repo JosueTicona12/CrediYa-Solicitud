@@ -19,7 +19,7 @@ public class SolicitudUseCase {
     private final SolicitudRepository solicitudRepository;
     private final UsuarioPort usuarioPort;
 
-    public Mono<Solicitud> crearSolicitud(SolicitudCreacionDTO creacion) {
+    public Mono<Solicitud> crearSolicitud(SolicitudCreacionDTO creacion, String emailToken) {
 
         if (creacion.documento() == null || creacion.documento().isBlank()) {
             return Mono.error(new SolicitudValidationException("El documento es obligatorio"));
@@ -41,6 +41,9 @@ public class SolicitudUseCase {
                     final String email = usuarioAuth.email();
                     if (email == null || email.isBlank()) {
                         return Mono.error(new SolicitudValidationException("El usuario no tiene email válido"));
+                    }
+                    if (emailToken == null || !email.equalsIgnoreCase(emailToken)) {
+                        return Mono.error(new SolicitudException("El token no pertenece al usuario"));
                     }
                     return solicitudRepository.findByEmail(email)
                             .flatMap(ex -> Mono.<Solicitud>error(

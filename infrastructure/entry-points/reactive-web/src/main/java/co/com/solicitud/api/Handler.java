@@ -39,7 +39,8 @@ public class Handler {
                                 .bodyValue(Map.of("error", "Token inválido: se requiere ser CLIENTE"));
                     }
                     String token = JwtUtil.extractToken(authHeader);
-                    return solicitudUseCase.crearSolicitud(dto)
+                    String email = JwtUtil.getEmail(token);
+                    return solicitudUseCase.crearSolicitud(dto, email)
                             .contextWrite(ctx -> ctx.put("authToken", token))
                             .flatMap(saved -> ServerResponse.status(201)
                                     .contentType(MediaType.APPLICATION_JSON)

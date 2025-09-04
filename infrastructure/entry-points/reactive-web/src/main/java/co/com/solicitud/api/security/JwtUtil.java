@@ -22,9 +22,12 @@ public class JwtUtil {
 
     private static DecodedJWT decode(String authHeader) {
         String token = extractToken(authHeader);
-        return token != null ? JWT.decode(token) : null;
+        return decodeToken(token);
     }
 
+    private static DecodedJWT decodeToken(String token) {
+        return token != null ? JWT.decode(token) : null;
+    }
     public static boolean isClient(String authHeader) {
         DecodedJWT jwt = decode(authHeader);
         if (jwt == null) {
@@ -39,5 +42,9 @@ public class JwtUtil {
         }
         List<String> roles = jwt.getClaim("roles").asList(String.class);
         return roles != null && roles.contains("3");
+    }
+    public static String getEmail(String token) {
+        DecodedJWT jwt = decodeToken(token);
+        return jwt != null ? jwt.getSubject() : null;
     }
 }
