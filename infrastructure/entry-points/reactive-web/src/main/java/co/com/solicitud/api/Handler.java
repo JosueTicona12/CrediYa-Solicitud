@@ -2,6 +2,7 @@ package co.com.solicitud.api;
 
 import co.com.solicitud.api.config.ErrorResponse;
 import co.com.solicitud.api.config.SuccessResponse;
+import co.com.solicitud.api.security.JwtUtil;
 import co.com.solicitud.model.solicitud.Solicitud;
 import co.com.solicitud.model.solicitud.dto.SolicitudCreacionDTO;
 import co.com.solicitud.usecase.solicitud.SolicitudUseCase;
@@ -10,6 +11,7 @@ import exceptions.SolicitudNotFoundException;
 import exceptions.SolicitudUpdateException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -28,11 +30,27 @@ public class Handler {
     private final SolicitudUseCase solicitudUseCase;
 
     public Mono<ServerResponse> listenSaveSolicitud(ServerRequest req) {
+        String authHeader = req.headers().firstHeader(HttpHeaders.AUTHORIZATION);
         return req.bodyToMono(SolicitudCreacionDTO.class)
-                .flatMap(solicitudUseCase::crearSolicitud)
-                .flatMap(saved -> ServerResponse.status(201)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(saved))
+                .flatMap(dto -> {
+                    if (!JwtUtil.isClient(authHeader)) {
+                        return ServerResponse.status(HttpStatus.UNAUTHORIZED)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .bodyValue(Map.of("error", "Token inválido"));
+                    }
+                    String documento = JwtUtil.getDocumento(authHeader);
+                    if (documento == null || !documento.equals(dto.documento())) {
+                        return ServerResponse.status(HttpStatus.FORBIDDEN)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .bodyValue(Map.of("error", "No autorizado"));
+                    }
+                    String token = JwtUtil.extractToken(authHeader);
+                    return solicitudUseCase.crearSolicitud(dto)
+                            .contextWrite(ctx -> ctx.put("authToken", token))
+                            .flatMap(saved -> ServerResponse.status(201)
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .bodyValue(saved));
+                })
                 .onErrorResume(e -> ServerResponse.badRequest()
                         .contentType(MediaType.APPLICATION_JSON)
                         .bodyValue(Map.of("error", e.getMessage())));

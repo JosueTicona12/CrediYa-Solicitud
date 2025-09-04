@@ -5,5 +5,6 @@ public record UsuarioDTO (
     String nombres,
     String apellidos,
     String email,
+    String documento,
     Long activo
     ) {}
