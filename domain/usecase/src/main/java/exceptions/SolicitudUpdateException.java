@@ -1,7 +1,9 @@
 package exceptions;
 
+import co.com.solicitud.usecase.solicitud.utils.SolicitudErrorEnum;
+
 public class SolicitudUpdateException extends RuntimeException {
     public SolicitudUpdateException(Long id) {
-        super("No se pudo actualizar el servicio con id " + id);
+        super(String.format(SolicitudErrorEnum.NO_SE_PUDO_ACTUALIZAR.message(), id));
     }
 }

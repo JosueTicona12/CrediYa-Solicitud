@@ -117,6 +117,26 @@ public class RouterRest {
                     )
             ),
             @RouterOperation(
+                    path = "/solicitudes/revision",
+                    method = RequestMethod.GET,
+                    beanClass = Handler.class,
+                    beanMethod = "listenGetSolicitudesRevision",
+                    operation = @Operation(
+                            operationId = "getSolicitudesRevision",
+                            summary = "Obtiene solicitudes pendientes de revisión",
+                            parameters = {
+                                    @Parameter(name = "page", in = ParameterIn.QUERY, schema = @Schema(type = "int")),
+                                    @Parameter(name = "size", in = ParameterIn.QUERY, schema = @Schema(type = "int")),
+                                    @Parameter(name = "filtro", in = ParameterIn.QUERY, schema = @Schema(type = "string"))
+                            },
+                            responses = @ApiResponse(
+                                    responseCode = "200",
+                                    description = "Lista de solicitudes para revisión",
+                                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = Solicitud.class)))
+                            )
+                    )
+            ),
+            @RouterOperation(
                     path = "/solicitudes/{id}",
                     method = RequestMethod.GET,
                     beanClass = Handler.class,
@@ -150,6 +170,7 @@ public class RouterRest {
                 .andRoute(PUT(solicitudPath.getSolicitudesById()), solicitudHandler::listenUpdateSolicitud)
                 .andRoute(DELETE(solicitudPath.getSolicitudesById()), solicitudHandler::listenDeleteSolicitud)
                 .andRoute(GET(solicitudPath.getSolicitudes()), solicitudHandler::listenGetAllSolicitud)
+                .andRoute(GET(solicitudPath.getSolicitudesRevision()), solicitudHandler::listenGetSolicitudesRevision)
                 .andRoute(GET(solicitudPath.getSolicitudesById()), solicitudHandler::listenSolicitudById);
     }
 }

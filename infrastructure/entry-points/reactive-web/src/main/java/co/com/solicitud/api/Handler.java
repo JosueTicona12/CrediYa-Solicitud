@@ -6,6 +6,8 @@ import co.com.solicitud.api.security.JwtUtil;
 import co.com.solicitud.model.solicitud.Solicitud;
 import co.com.solicitud.model.solicitud.dto.SolicitudCreacionDTO;
 import co.com.solicitud.usecase.solicitud.SolicitudUseCase;
+import co.com.solicitud.usecase.solicitud.utils.SolicitudErrorEnum;
+import co.com.solicitud.usecase.solicitud.utils.SolicitudLogEnum;
 import exceptions.SolicitudDeleteException;
 import exceptions.SolicitudNotFoundException;
 import exceptions.SolicitudUpdateException;
@@ -36,7 +38,7 @@ public class Handler {
                     if (!JwtUtil.isClient(authHeader)) {
                         return ServerResponse.status(HttpStatus.UNAUTHORIZED)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .bodyValue(Map.of("error", "Token inválido: se requiere ser CLIENTE"));
+                                .bodyValue(Map.of("error", SolicitudErrorEnum.TOKEN_INVALIDO_CLIENTE.message()));
                     }
                     String token = JwtUtil.extractToken(authHeader);
                     String email = JwtUtil.getEmail(token);
@@ -53,7 +55,7 @@ public class Handler {
 
     public Mono<ServerResponse> listenUpdateSolicitud(ServerRequest request) {
         String id = request.pathVariable("id");
-        log.trace("Handler - Recibida petición de actualización para solicitud con id={}", id);
+        log.trace(SolicitudLogEnum.PETICION_ACTUALIZACION.message() + id);
 
         return request.bodyToMono(Solicitud.class)
                 .flatMap(usuario -> solicitudUseCase.updateSolicitud(usuario, Long.valueOf(id)))
@@ -75,7 +77,7 @@ public class Handler {
 
 
     public Mono<ServerResponse> listenGetAllSolicitud(ServerRequest request) {
-        log.trace("Handler - Recibida petición de obtener todas las solicitudes");
+        log.trace(SolicitudLogEnum.PETICION_OBTENER_TODAS.message());
 
         return ServerResponse.ok()
                 .contentType(MediaType.TEXT_EVENT_STREAM)
@@ -84,9 +86,28 @@ public class Handler {
                         e -> buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), request));
     }
 
+    public Mono<ServerResponse> listenGetSolicitudesRevision(ServerRequest request) {
+        log.trace("Handler - Recibida petición de obtener solicitudes para revisión");
+        String authHeader = request.headers().firstHeader(HttpHeaders.AUTHORIZATION);
+        if (!JwtUtil.isAsesor(authHeader)) {
+            return ServerResponse.status(HttpStatus.UNAUTHORIZED)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(Map.of("error", "Token inválido: se requiere ser ASESOR"));
+        }
+        int page = Integer.parseInt(request.queryParam("page").orElse("0"));
+        int size = Integer.parseInt(request.queryParam("size").orElse("10"));
+        String filtro = request.queryParam("filtro").orElse("");
+
+        return ServerResponse.ok()
+                .contentType(MediaType.TEXT_EVENT_STREAM)
+                .body(solicitudUseCase.getSolicitudesRevision(page, size, filtro), Solicitud.class)
+                .onErrorResume(Exception.class,
+                        e -> buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), request));
+    }
+
     public Mono<ServerResponse> listenSolicitudById(ServerRequest request) {
         String id = request.pathVariable("id");
-        log.trace("Handler - Recibida petición de obtener solicitud con id={}", id);
+        log.trace(SolicitudLogEnum.PETICION_OBTENER_ID.message() + id);
 
         return solicitudUseCase.getSolicitudById(Long.valueOf(id))
                 .flatMap(usuario -> ServerResponse.ok()
@@ -98,7 +119,7 @@ public class Handler {
 
     public Mono<ServerResponse> listenDeleteSolicitud(ServerRequest request) {
         String id = request.pathVariable("id");
-        log.trace("Handler - Recibida petición de eliminar solicitud con id={}", id);
+        log.trace(SolicitudLogEnum.PETICION_ELIMINAR.message() + id);
 
         return solicitudUseCase.deleteSolicitud(Long.valueOf(id))
                 .then(ServerResponse.noContent().build())

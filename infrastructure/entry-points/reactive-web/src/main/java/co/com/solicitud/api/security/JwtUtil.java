@@ -47,4 +47,19 @@ public class JwtUtil {
         DecodedJWT jwt = decodeToken(token);
         return jwt != null ? jwt.getSubject() : null;
     }
+    public static boolean isAsesor(String authHeader) {
+        DecodedJWT jwt = decode(authHeader);
+        if (jwt == null) {
+            return false;
+        }
+        String role = jwt.getClaim("rol").asString();
+        if (role == null) {
+            role = jwt.getClaim("role").asString();
+        }
+        if ("2".equals(role)) {
+            return true;
+        }
+        List<String> roles = jwt.getClaim("roles").asList(String.class);
+        return roles != null && roles.contains("2");
+    }
 }
