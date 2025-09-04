@@ -99,10 +99,12 @@ public class SolicitudUseCase {
                 .doOnError(e -> log.severe(SolicitudLogEnum.ERROR_CONSULTA_SOLICITUDES.message() + e));
     }
 
-    public Flux<Solicitud> getSolicitudesRevision(int page, int size, String filtro) {
+    public Flux<Solicitud> getSolicitudesRevision(int page, int size, String filtro, Collection<Long> estados) {
         log.info(SolicitudLogEnum.OBTENER_SOLICITUDES_REVISION.message());
-        var estados = java.util.List.of(2L, 3L, 4L);
-        return solicitudRepository.findByIdestadoIn(estados)
+        Collection<Long> estadosFiltrar = (estados == null || estados.isEmpty())
+                ? java.util.List.of(2L, 3L, 4L)
+                : estados;
+        return solicitudRepository.findByIdestadoIn(estadosFiltrar)
                 .filter(s -> filtro == null || filtro.isBlank() || s.getEmail().contains(filtro))
                 .skip((long) page * size)
                 .take(size)

@@ -22,6 +22,8 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -97,10 +99,15 @@ public class Handler {
         int page = Integer.parseInt(request.queryParam("page").orElse("0"));
         int size = Integer.parseInt(request.queryParam("size").orElse("10"));
         String filtro = request.queryParam("filtro").orElse("");
+        String estadosParam = request.queryParam("estados").orElse("");
+        List<Long> estados = Arrays.stream(estadosParam.split(","))
+                .filter(s -> !s.isBlank())
+                .map(Long::parseLong)
+                .toList();
 
         return ServerResponse.ok()
                 .contentType(MediaType.TEXT_EVENT_STREAM)
-                .body(solicitudUseCase.getSolicitudesRevision(page, size, filtro), Solicitud.class)
+                .body(solicitudUseCase.getSolicitudesRevision(page, size, filtro, estados), Solicitud.class)
                 .onErrorResume(Exception.class,
                         e -> buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), request));
     }

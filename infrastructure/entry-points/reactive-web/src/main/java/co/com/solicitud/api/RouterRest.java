@@ -127,7 +127,8 @@ public class RouterRest {
                             parameters = {
                                     @Parameter(name = "page", in = ParameterIn.QUERY, schema = @Schema(type = "int")),
                                     @Parameter(name = "size", in = ParameterIn.QUERY, schema = @Schema(type = "int")),
-                                    @Parameter(name = "filtro", in = ParameterIn.QUERY, schema = @Schema(type = "string"))
+                                    @Parameter(name = "filtro", in = ParameterIn.QUERY, schema = @Schema(type = "string")),
+                                    @Parameter(name = "estados", in = ParameterIn.QUERY, description = "Ids de estados separados por coma", schema = @Schema(type = "string"))
                             },
                             responses = @ApiResponse(
                                     responseCode = "200",
