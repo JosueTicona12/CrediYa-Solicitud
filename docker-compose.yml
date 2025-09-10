@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  autenticacion:
+    build:
+      context: .
+      dockerfile: deployment/Dockerfile
+    image: crediya-solicitud
+    container_name: solicitud
+    depends_on:
+      - auth-db
+    environment:
+      SERVER_PORT: 8080
+      ADAPTERS_R2DBC_HOST: auth-db
+      ADAPTERS_R2DBC_PORT: 5432
+      ADAPTERS_R2DBC_DATABASE: crediya_auth
+      ADAPTERS_R2DBC_SCHEMA: crediya_auth
+      ADAPTERS_R2DBC_USERNAME: postgres
+      ADAPTERS_R2DBC_PASSWORD: postgres
+      SPRING_DATASOURCE_URL: jdbc:postgresql://auth-db:5432/crediya_auth
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+    ports:
+      - "8080:8080"
+    networks:
+      - crediya-network
+
+  auth-db:
+    image: postgres:15-alpine
+    container_name: auth-db
+    environment:
+      POSTGRES_DB: crediya_auth
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - auth_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - crediya-network
+
+networks:
+  crediya-network:
+
+volumes:
+  auth_data:

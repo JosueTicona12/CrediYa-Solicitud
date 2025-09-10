@@ -7,19 +7,17 @@ spring:
     name: "CrediYa_Sol"
   devtools:
     add-properties: false
-  h2:
-    console:
-      enabled: true
-      path: "/h2"
-  profiles:
-    include: null
-  datasource:
-    url: "jdbc:h2:mem:test"
-    username: "sa"
-    password: "pass"
-    driverClassName: "org.h2.Driver"
-  jpa:
-    databasePlatform: "org.hibernate.dialect.H2Dialect"
+
+
+  # R2DBC (WebFlux)
+  r2dbc:
+    host: ${ADAPTERS_R2DBC_HOST}
+    port: ${ADAPTERS_R2DBC_PORT:5432}
+    database: ${ADAPTERS_R2DBC_DATABASE:postgres}
+    schema: ${ADAPTERS_R2DBC_SCHEMA}
+    username: ${ADAPTERS_R2DBC_USERNAME}
+    password: ${ADAPTERS_R2DBC_PASSWORD}
+
 management:
   endpoints:
     web:
@@ -40,12 +38,9 @@ routes:
 
 adapters:
   r2dbc:
-    host: "localhost"
-    port: 5432
-    database: "postgres"
-    schema: "crediya_auth"
-    username: "postgres"
-    password: "73657869"
+    url: ${SPRING_R2DBC_URL}
+    username: ${SPRING_R2DBC_USERNAME}
+    password: ${SPRING_R2DBC_PASSWORD}
 
 logging:
   level:
@@ -54,4 +49,4 @@ logging:
     org.springframework.r2dbc: DEBUG
 
 usuarios:
-  base-url: http://localhost:8081/api/v1/-
+  base-url: ${USUARIOS_BASE_URL:http://localhost:8081}
