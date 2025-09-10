@@ -1,6 +1,8 @@
 server:
   port: 8080
 spring:
+  codec:
+    max-in-memory-size: 3MB
   application:
     name: "CrediYa_Sol"
   devtools:
@@ -28,12 +30,13 @@ management:
       probes:
         enabled: true
 cors:
-  allowed-origins: "http://localhost:4200,http://localhost:8080"
+  allowed-origins: "http://localhost:4200,http://localhost:8080,http://localhost:8081"
 
 routes:
   paths:
-    usuarios: "/api/v1/solicitud"
-    usuariosById: "/api/v1/solicitud/{id}"
+    solicitudes: "/api/v1/solicitudes"
+    solicitudesById: "/api/v1/solicitudes/{id}"
+    solicitudesRevision: "/api/v1/solicitudes/revision"
 
 adapters:
   r2dbc:
@@ -49,3 +52,6 @@ logging:
     root: INFO
     co.com.autenticacion: TRACE
     org.springframework.r2dbc: DEBUG
+
+usuarios:
+  base-url: http://localhost:8081/api/v1/-
