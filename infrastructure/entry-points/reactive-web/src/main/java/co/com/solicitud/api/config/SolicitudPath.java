@@ -10,4 +10,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class SolicitudPath {
     private String solicitudes;
     private String solicitudesById;
+    private String solicitudesRevision;
 }

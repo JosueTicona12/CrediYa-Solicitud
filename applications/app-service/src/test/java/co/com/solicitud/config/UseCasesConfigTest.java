@@ -1,44 +1,24 @@
 package co.com.solicitud.config;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.springframework.context.annotation.*;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class UseCasesConfigTest {
 
     @Test
-    void testUseCaseBeansExist() {
-        try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(TestConfig.class)) {
-            String[] beanNames = context.getBeanDefinitionNames();
+    void shouldConfigureComponentScanForUseCases() {
+        ComponentScan componentScan = UseCasesConfig.class.getAnnotation(ComponentScan.class);
+        assertNotNull(componentScan, "UseCasesConfig must declare @ComponentScan");
 
-            boolean useCaseBeanFound = false;
-            for (String beanName : beanNames) {
-                if (beanName.endsWith("UseCase")) {
-                    useCaseBeanFound = true;
-                    break;
-                }
-            }
+        assertArrayEquals(new String[]{"co.com.solicitud.usecase"}, componentScan.basePackages());
+        assertFalse(componentScan.useDefaultFilters());
 
-            assertTrue(useCaseBeanFound, "No beans ending with 'Use Case' were found");
-        }
-    }
-
-    @Configuration
-    @Import(UseCasesConfig.class)
-    static class TestConfig {
-
-        @Bean
-        public MyUseCase myUseCase() {
-            return new MyUseCase();
-        }
-    }
-
-    static class MyUseCase {
-        public String execute() {
-            return "MyUseCase Test";
-        }
+        ComponentScan.Filter[] filters = componentScan.includeFilters();
+        assertEquals(1, filters.length);
+        ComponentScan.Filter filter = filters[0];
+        assertEquals(FilterType.REGEX, filter.type());
+        assertArrayEquals(new String[]{"^.+UseCase$"}, filter.pattern());
     }
 }

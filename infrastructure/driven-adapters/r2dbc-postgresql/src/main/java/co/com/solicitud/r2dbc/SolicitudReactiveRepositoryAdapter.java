@@ -10,6 +10,8 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Collection;
+
 @Repository
 public class SolicitudReactiveRepositoryAdapter extends ReactiveAdapterOperations<
         Solicitud,
@@ -48,4 +50,12 @@ public class SolicitudReactiveRepositoryAdapter extends ReactiveAdapterOperation
         return repository.findByEmail(email)
                 .map(entity -> mapper.map(entity, Solicitud.class));
     }
+
+    @Override
+    public Flux<Solicitud> findByIdestadoIn(Collection<Long> estados) {
+        return repository.findByIdestadoIn(estados)
+                .map(entity -> mapper.map(entity, Solicitud.class));
+    }
+
+
 }

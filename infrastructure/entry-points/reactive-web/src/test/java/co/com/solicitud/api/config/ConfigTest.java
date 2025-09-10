@@ -20,7 +20,7 @@ import static org.mockito.Mockito.when;
 
 
 @WebFluxTest
-@Import({ RouterRest.class, Handler.class, CorsConfig.class, SecurityHeadersConfig.class, ConfigTest.TestBeans.class })
+@Import({ RouterRest.class, Handler.class, SecurityConfig.class, CorsConfig.class, SecurityHeadersConfig.class, ConfigTest.TestBeans.class })
 class ConfigTest {
 
     @Autowired
@@ -62,6 +62,7 @@ class ConfigTest {
             var p = new SolicitudPath();
             p.setSolicitudes("/api/v1/solicitudes");
             p.setSolicitudesById("/api/v1/solicitudes/{id}");
+            p.setSolicitudesRevision("/api/v1/solicitudes/revision");
             return p;
         }
     }

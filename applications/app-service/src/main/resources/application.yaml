@@ -30,12 +30,13 @@ management:
       probes:
         enabled: true
 cors:
-  allowed-origins: "http://localhost:4200,http://localhost:8080"
+  allowed-origins: "http://localhost:4200,http://localhost:8080,http://localhost:8081"
 
 routes:
   paths:
     solicitudes: "/api/v1/solicitudes"
     solicitudesById: "/api/v1/solicitudes/{id}"
+    solicitudesRevision: "/api/v1/solicitudes/revision"
 
 adapters:
   r2dbc:
@@ -53,4 +54,4 @@ logging:
     org.springframework.r2dbc: DEBUG
 
 usuarios:
-  base-url: http://ms-usuarios:8081/api/v1
+  base-url: http://localhost:8081/api/v1/-

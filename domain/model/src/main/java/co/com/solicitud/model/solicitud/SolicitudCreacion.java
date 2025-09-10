@@ -1,6 +1,6 @@
-package co.com.solicitud.model.solicitud.dto;
+package co.com.solicitud.model.solicitud;
 
-public record SolicitudCreacionDTO (
+public record SolicitudCreacion(
         String documento,
         Integer monto,
         java.time.LocalDate plazo,
