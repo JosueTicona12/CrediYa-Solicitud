@@ -77,15 +77,28 @@ public class SolicitudUseCase {
         if (solicitud == null) {
             return Mono.error(new SolicitudValidationException(SolicitudErrorEnum.SOLICITUD_NULA.message()));
         }
+        if (solicitud.getEmail() == null || solicitud.getEmail().isBlank()) {
+            return Mono.error(new SolicitudValidationException(SolicitudErrorEnum.EMAIL_OBLIGATORIO.message()));
+        }
+        if (solicitud.getIdestado() == null) {
+            return Mono.error(new SolicitudValidationException(SolicitudErrorEnum.IDESTADO_OBLIGATORIO.message()));
+        }
+
 
         return solicitudRepository.findById(id)
                 .switchIfEmpty(Mono.error(new SolicitudNotFoundException(id)))
                 .flatMap(existing -> {
-                    existing.setMonto(solicitud.getMonto());
                     existing.setEmail(solicitud.getEmail());
-                    existing.setPlazo(solicitud.getPlazo());
                     existing.setIdestado(solicitud.getIdestado());
-                    existing.setIdtipoprestamo(solicitud.getIdtipoprestamo());
+                    if (solicitud.getMonto() != null) {
+                        existing.setMonto(solicitud.getMonto());
+                    }
+                    if (solicitud.getPlazo() != null) {
+                        existing.setPlazo(solicitud.getPlazo());
+                    }
+                    if (solicitud.getMonto() != null) {
+                        existing.setMonto(solicitud.getMonto());
+                    }
                     return solicitudRepository.save(existing)
                             .flatMap(saved -> {
                                 if (solicitud.getIdestado() != null &&
