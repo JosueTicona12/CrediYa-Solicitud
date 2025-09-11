@@ -1,5 +1,6 @@
 package co.com.solicitud.api.config;
 
+import co.com.solicitud.usecase.solicitud.utils.SolicitudStatusEnum;
 import exceptions.SolicitudDeleteException;
 import exceptions.SolicitudNotFoundException;
 import exceptions.SolicitudUpdateException;
@@ -18,11 +19,12 @@ public class GlobalExceptionHandler {
     private Mono<ResponseEntity<ErrorResponse>> buildErrorResponse(
             Exception ex,
             HttpStatus status,
+            SolicitudStatusEnum business,
             ServerHttpRequest request
     ) {
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
-                .status(status.value())
+                .status(business.code())
                 .error(status.getReasonPhrase())
                 .message(ex.getMessage())
                 .path(request.getURI().getPath())
@@ -36,7 +38,7 @@ public class GlobalExceptionHandler {
             SolicitudNotFoundException ex,
             ServerHttpRequest request
     ) {
-        return buildErrorResponse(ex, HttpStatus.NOT_FOUND, request);
+        return buildErrorResponse(ex, HttpStatus.NOT_FOUND, SolicitudStatusEnum.SOLICITUD_NO_ENCONTRADA, request);
     }
 
     @ExceptionHandler(SolicitudValidationException.class)
@@ -44,7 +46,7 @@ public class GlobalExceptionHandler {
             SolicitudValidationException ex,
             ServerHttpRequest request
     ) {
-        return buildErrorResponse(ex, HttpStatus.BAD_REQUEST, request);
+        return buildErrorResponse(ex, HttpStatus.BAD_REQUEST, SolicitudStatusEnum.VALIDACION_ERROR, request);
     }
 
     @ExceptionHandler(SolicitudUpdateException.class)
@@ -52,7 +54,7 @@ public class GlobalExceptionHandler {
             SolicitudUpdateException ex,
             ServerHttpRequest request
     ) {
-        return buildErrorResponse(ex, HttpStatus.CONFLICT, request);
+        return buildErrorResponse(ex, HttpStatus.CONFLICT, SolicitudStatusEnum.SOLICITUD_NO_ACTUALIZADA, request);
     }
 
     @ExceptionHandler(SolicitudDeleteException.class)
@@ -60,7 +62,7 @@ public class GlobalExceptionHandler {
             SolicitudDeleteException ex,
             ServerHttpRequest request
     ) {
-        return buildErrorResponse(ex, HttpStatus.INTERNAL_SERVER_ERROR, request);
+        return buildErrorResponse(ex, HttpStatus.INTERNAL_SERVER_ERROR, SolicitudStatusEnum.SOLICITUD_NO_ELIMINADA, request);
     }
 
     @ExceptionHandler(Exception.class) // fallback para errores no controlados
@@ -68,6 +70,6 @@ public class GlobalExceptionHandler {
             Exception ex,
             ServerHttpRequest request
     ) {
-        return buildErrorResponse(ex, HttpStatus.INTERNAL_SERVER_ERROR, request);
+        return buildErrorResponse(ex, HttpStatus.INTERNAL_SERVER_ERROR, SolicitudStatusEnum.ERROR, request);
     }
 }

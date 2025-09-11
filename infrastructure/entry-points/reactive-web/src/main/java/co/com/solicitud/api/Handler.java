@@ -8,6 +8,7 @@ import co.com.solicitud.model.solicitud.SolicitudCreacion;
 import co.com.solicitud.usecase.solicitud.SolicitudUseCase;
 import co.com.solicitud.usecase.solicitud.utils.SolicitudErrorEnum;
 import co.com.solicitud.usecase.solicitud.utils.SolicitudLogEnum;
+import co.com.solicitud.usecase.solicitud.utils.SolicitudStatusEnum;
 import exceptions.SolicitudDeleteException;
 import exceptions.SolicitudNotFoundException;
 import exceptions.SolicitudUpdateException;
@@ -38,21 +39,30 @@ public class Handler {
         return req.bodyToMono(SolicitudCreacion.class)
                 .flatMap(dto -> {
                     if (!JwtUtil.isClient(authHeader)) {
-                        return ServerResponse.status(HttpStatus.UNAUTHORIZED)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .bodyValue(Map.of("error", SolicitudErrorEnum.TOKEN_INVALIDO_CLIENTE.message()));
+                        return buildErrorResponse(HttpStatus.UNAUTHORIZED,
+                                SolicitudStatusEnum.UNAUTHORIZED,
+                                SolicitudErrorEnum.TOKEN_INVALIDO_CLIENTE.message(),
+                                req);
                     }
                     String token = JwtUtil.extractToken(authHeader);
                     String email = JwtUtil.getEmail(token);
                     return solicitudUseCase.crearSolicitud(dto, email)
                             .contextWrite(ctx -> ctx.put("authToken", token))
-                            .flatMap(saved -> ServerResponse.status(201)
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .bodyValue(saved));
+                            .flatMap(saved -> {
+                                SuccessResponse response = SuccessResponse.builder()
+                                        .timestamp(LocalDateTime.now())
+                                        .status(SolicitudStatusEnum.SOLICITUD_CREADA.code())
+                                        .message("Solicitud creada correctamente")
+                                        .build();
+                                return ServerResponse.status(HttpStatus.CREATED)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .bodyValue(response);
+                            });
                 })
-                .onErrorResume(e -> ServerResponse.badRequest()
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(Map.of("error", e.getMessage())));
+                .onErrorResume(e -> buildErrorResponse(HttpStatus.BAD_REQUEST,
+                        SolicitudStatusEnum.VALIDACION_ERROR,
+                        e.getMessage(),
+                        req));
     }
 
     public Mono<ServerResponse> listenUpdateSolicitud(ServerRequest request) {
@@ -60,16 +70,17 @@ public class Handler {
         log.trace(SolicitudLogEnum.PETICION_ACTUALIZACION.message() + id);
         String authHeader = request.headers().firstHeader(HttpHeaders.AUTHORIZATION);
         if (!JwtUtil.isAsesor(authHeader)) {
-            return ServerResponse.status(HttpStatus.UNAUTHORIZED)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(Map.of("error", SolicitudErrorEnum.TOKEN_INVALIDO_ASESOR.message()));
+            return buildErrorResponse(HttpStatus.UNAUTHORIZED,
+                    SolicitudStatusEnum.UNAUTHORIZED,
+                    SolicitudErrorEnum.TOKEN_INVALIDO_ASESOR.message(),
+                    request);
         }
         return request.bodyToMono(Solicitud.class)
                 .flatMap(usuario -> solicitudUseCase.updateSolicitud(usuario, Long.valueOf(id)))
                 .flatMap(u -> {
                     SuccessResponse response = SuccessResponse.builder()
                             .timestamp(LocalDateTime.now())
-                            .status(HttpStatus.OK.value())
+                            .status(SolicitudStatusEnum.SOLICITUD_ACTUALIZADA.code())
                             .message("Solicitud actualizado correctamente")
                             .build();
                     return ServerResponse.ok()
@@ -77,29 +88,47 @@ public class Handler {
                             .bodyValue(response);
                 })
                 .onErrorResume(SolicitudNotFoundException.class,
-                        e -> buildErrorResponse(HttpStatus.NOT_FOUND, e.getMessage(), request))
+                        e -> buildErrorResponse(HttpStatus.NOT_FOUND,
+                                SolicitudStatusEnum.SOLICITUD_NO_ENCONTRADA,
+                                e.getMessage(),
+                                request))
                 .onErrorResume(SolicitudUpdateException.class,
-                        e -> buildErrorResponse(HttpStatus.CONFLICT, e.getMessage(), request));
+                        e -> buildErrorResponse(HttpStatus.CONFLICT,
+                                SolicitudStatusEnum.SOLICITUD_NO_ACTUALIZADA,
+                                e.getMessage(),
+                                request));
     }
 
 
     public Mono<ServerResponse> listenGetAllSolicitud(ServerRequest request) {
         log.trace(SolicitudLogEnum.PETICION_OBTENER_TODAS.message());
 
-        return ServerResponse.ok()
-                .contentType(MediaType.TEXT_EVENT_STREAM)
-                .body(solicitudUseCase.getAllSolicitud(), Solicitud.class)
+        return solicitudUseCase.getAllSolicitud().collectList()
+                .flatMap(list -> {
+                    SuccessResponse response = SuccessResponse.builder()
+                            .timestamp(LocalDateTime.now())
+                            .status(SolicitudStatusEnum.SOLICITUDES_LISTADAS.code())
+                            .message("Solicitudes listadas correctamente")
+                            .build();
+                    return ServerResponse.ok()
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(response);
+                })
                 .onErrorResume(Exception.class,
-                        e -> buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), request));
+                        e -> buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                                SolicitudStatusEnum.ERROR,
+                                e.getMessage(),
+                                request));
     }
 
     public Mono<ServerResponse> listenGetSolicitudesRevision(ServerRequest request) {
         log.trace("Handler - Recibida petición de obtener solicitudes para revisión");
         String authHeader = request.headers().firstHeader(HttpHeaders.AUTHORIZATION);
         if (!JwtUtil.isAsesor(authHeader)) {
-            return ServerResponse.status(HttpStatus.UNAUTHORIZED)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(Map.of("error", "Token inválido: se requiere ser ASESOR"));
+            return buildErrorResponse(HttpStatus.UNAUTHORIZED,
+                    SolicitudStatusEnum.UNAUTHORIZED,
+                    SolicitudErrorEnum.TOKEN_INVALIDO_ASESOR.message(),
+                    request);
         }
         int page = Integer.parseInt(request.queryParam("page").orElse("0"));
         int size = Integer.parseInt(request.queryParam("size").orElse("10"));
@@ -110,11 +139,22 @@ public class Handler {
                 .map(Long::parseLong)
                 .toList();
 
-        return ServerResponse.ok()
-                .contentType(MediaType.TEXT_EVENT_STREAM)
-                .body(solicitudUseCase.getSolicitudesRevision(page, size, filtro, estados), Solicitud.class)
+        return solicitudUseCase.getSolicitudesRevision(page, size, filtro, estados).collectList()
+                .flatMap(list -> {
+                    SuccessResponse response = SuccessResponse.builder()
+                            .timestamp(LocalDateTime.now())
+                            .status(SolicitudStatusEnum.SOLICITUDES_LISTADAS.code())
+                            .message("Solicitudes listadas correctamente")
+                            .build();
+                    return ServerResponse.ok()
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(response);
+                })
                 .onErrorResume(Exception.class,
-                        e -> buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), request));
+                        e -> buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                                SolicitudStatusEnum.ERROR,
+                                e.getMessage(),
+                                request));
     }
 
     public Mono<ServerResponse> listenSolicitudById(ServerRequest request) {
@@ -122,11 +162,21 @@ public class Handler {
         log.trace(SolicitudLogEnum.PETICION_OBTENER_ID.message() + id);
 
         return solicitudUseCase.getSolicitudById(Long.valueOf(id))
-                .flatMap(usuario -> ServerResponse.ok()
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .bodyValue(usuario))
+                .flatMap(usuario -> {
+                    SuccessResponse response = SuccessResponse.builder()
+                            .timestamp(LocalDateTime.now())
+                            .status(SolicitudStatusEnum.SOLICITUD_ENCONTRADA.code())
+                            .message("Solicitud encontrada")
+                            .build();
+                    return ServerResponse.ok()
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(response);
+                })
                 .onErrorResume(SolicitudNotFoundException.class,
-                        e -> buildErrorResponse(HttpStatus.NOT_FOUND, e.getMessage(), request));
+                        e -> buildErrorResponse(HttpStatus.NOT_FOUND,
+                                SolicitudStatusEnum.SOLICITUD_NO_ENCONTRADA,
+                                e.getMessage(),
+                                request));
     }
 
     public Mono<ServerResponse> listenDeleteSolicitud(ServerRequest request) {
@@ -134,21 +184,35 @@ public class Handler {
         log.trace(SolicitudLogEnum.PETICION_ELIMINAR.message() + id);
 
         return solicitudUseCase.deleteSolicitud(Long.valueOf(id))
-                .then(ServerResponse.noContent().build())
+                .then(Mono.defer(() -> {
+                    SuccessResponse response = SuccessResponse.builder()
+                            .timestamp(LocalDateTime.now())
+                            .status(SolicitudStatusEnum.SOLICITUD_ELIMINADA.code())
+                            .message("Solicitud eliminada correctamente")
+                            .build();
+                    return ServerResponse.ok()
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(response);
+                }))
                 .onErrorResume(SolicitudNotFoundException.class,
-                        e -> buildErrorResponse(HttpStatus.NOT_FOUND, e.getMessage(), request))
+                        e -> buildErrorResponse(HttpStatus.NOT_FOUND,
+                                SolicitudStatusEnum.SOLICITUD_NO_ENCONTRADA,
+                                e.getMessage(),
+                                request))
                 .onErrorResume(SolicitudDeleteException.class,
-                        e -> buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), request));
+                        e -> buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                                SolicitudStatusEnum.SOLICITUD_NO_ELIMINADA,
+                                e.getMessage(),
+                                request));
     }
 
-    private Mono<ServerResponse> buildErrorResponse(HttpStatus status, String message, ServerRequest request) {
+    private Mono<ServerResponse> buildErrorResponse(HttpStatus status, SolicitudStatusEnum business, String message, ServerRequest request) {
         ErrorResponse error = ErrorResponse.builder()
-                .status(status.value())
+                .status(business.code())
                 .error(status.getReasonPhrase())
                 .message(message)
                 .path(request.path())
                 .build();
-
         return ServerResponse.status(status)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(error);
