@@ -2,22 +2,18 @@ server:
   port: 8080
 spring:
   codec:
-    max-in-memory-size: 3MB
+    max-in-memory-size: "3MB"
   application:
     name: "CrediYa_Sol"
   devtools:
     add-properties: false
-
-
-  # R2DBC (WebFlux)
   r2dbc:
-    host: ${ADAPTERS_R2DBC_HOST}
-    port: ${ADAPTERS_R2DBC_PORT:5432}
-    database: ${ADAPTERS_R2DBC_DATABASE:postgres}
-    schema: ${ADAPTERS_R2DBC_SCHEMA}
-    username: ${ADAPTERS_R2DBC_USERNAME}
-    password: ${ADAPTERS_R2DBC_PASSWORD}
-
+    host: "${ADAPTERS_R2DBC_HOST}"
+    port: "${ADAPTERS_R2DBC_PORT:5432}"
+    database: "${ADAPTERS_R2DBC_DATABASE:postgres}"
+    schema: "${ADAPTERS_R2DBC_SCHEMA}"
+    username: "${ADAPTERS_R2DBC_USERNAME}"
+    password: "${ADAPTERS_R2DBC_PASSWORD}"
 management:
   endpoints:
     web:
@@ -29,33 +25,32 @@ management:
         enabled: true
 cors:
   allowed-origins: "http://localhost:4200,http://localhost:8080,http://localhost:8081"
-
 routes:
   paths:
     solicitudes: "/api/v1/solicitudes"
     solicitudesById: "/api/v1/solicitudes/{id}"
     solicitudesRevision: "/api/v1/solicitudes/revision"
-
+    calcularCapacidad: "/api/v1/calcular-capacidad"
 aws:
-  region: us-east-2
-  accessKeyId: ${AWS_ACCESS_KEY_ID:}
-  secretAccessKey: ${AWS_SECRET_ACCESS_KEY:}
-
+  region: "us-east-2"
+  accessKeyId: "${AWS_ACCESS_KEY_ID:}"
+  secretAccessKey: "${AWS_SECRET_ACCESS_KEY:}"
 adapters:
   r2dbc:
-    url: ${SPRING_R2DBC_URL}
-    username: ${SPRING_R2DBC_USERNAME}
-    password: ${SPRING_R2DBC_PASSWORD}
+    url: "${SPRING_R2DBC_URL}"
+    username: "${SPRING_R2DBC_USERNAME}"
+    password: "${SPRING_R2DBC_PASSWORD}"
   sqs:
-    queueUrl: https://sqs.us-east-2.amazonaws.com/485658242518/cola-notificaciones-solicitud
-
-
-
+    queueUrl: "https://sqs.us-east-2.amazonaws.com/485658242518/cola-notificaciones-solicitud"
 logging:
   level:
-    root: INFO
-    co.com.autenticacion: TRACE
-    org.springframework.r2dbc: DEBUG
-
+    root: "INFO"
+    co.com.autenticacion: "TRACE"
+    org.springframework.r2dbc: "DEBUG"
 usuarios:
-  base-url: ${USUARIOS_BASE_URL:http://localhost:8081}
+  base-url: "${USUARIOS_BASE_URL:http://localhost:8081}"
+adapter:
+  sqs:
+    region: "us-east-1"
+    queueUrl: "http://localhost:4566/000000000000/sample"
+    endpoint: "http://localhost:4566 # For localstack only"

@@ -1,4 +1,4 @@
-package co.com.solicitud.api.sqs;
+package co.com.solicitud.sqs.sender.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

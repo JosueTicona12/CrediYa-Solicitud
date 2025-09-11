@@ -1,21 +1,16 @@
-package co.com.solicitud.api.sqs;
+package co.com.solicitud.sqs.sender;
 
 import co.com.solicitud.model.solicitud.port.NotificacionPort;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsAsyncClient;
-import software.amazon.awssdk.services.sqs.SqsAsyncClientBuilder;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 
 
-import java.net.URI;
 import java.util.Map;
 
 @Slf4j
