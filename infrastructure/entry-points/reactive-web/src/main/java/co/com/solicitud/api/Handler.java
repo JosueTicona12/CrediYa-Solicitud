@@ -58,7 +58,12 @@ public class Handler {
     public Mono<ServerResponse> listenUpdateSolicitud(ServerRequest request) {
         String id = request.pathVariable("id");
         log.trace(SolicitudLogEnum.PETICION_ACTUALIZACION.message() + id);
-
+        String authHeader = request.headers().firstHeader(HttpHeaders.AUTHORIZATION);
+        if (!JwtUtil.isAsesor(authHeader)) {
+            return ServerResponse.status(HttpStatus.UNAUTHORIZED)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(Map.of("error", SolicitudErrorEnum.TOKEN_INVALIDO_ASESOR.message()));
+        }
         return request.bodyToMono(Solicitud.class)
                 .flatMap(usuario -> solicitudUseCase.updateSolicitud(usuario, Long.valueOf(id)))
                 .flatMap(u -> {

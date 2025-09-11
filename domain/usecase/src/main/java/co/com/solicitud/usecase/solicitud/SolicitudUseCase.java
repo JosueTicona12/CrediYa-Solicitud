@@ -2,7 +2,9 @@ package co.com.solicitud.usecase.solicitud;
 
 import co.com.solicitud.model.solicitud.Solicitud;
 import co.com.solicitud.model.solicitud.SolicitudCreacion;
+import co.com.solicitud.model.solicitud.SolicitudEstadoUpdate;
 import co.com.solicitud.model.solicitud.gateways.SolicitudRepository;
+import co.com.solicitud.model.solicitud.port.NotificacionPort;
 import co.com.solicitud.model.solicitud.port.UsuarioPort;
 import co.com.solicitud.usecase.solicitud.utils.SolicitudErrorEnum;
 import co.com.solicitud.usecase.solicitud.utils.SolicitudLogEnum;
@@ -21,6 +23,7 @@ public class SolicitudUseCase {
 
     private final SolicitudRepository solicitudRepository;
     private final UsuarioPort usuarioPort;
+    private final NotificacionPort notificacionPort;
 
     public Mono<Solicitud> crearSolicitud(SolicitudCreacion creacion, String emailToken) {
 
@@ -83,7 +86,16 @@ public class SolicitudUseCase {
                     existing.setPlazo(solicitud.getPlazo());
                     existing.setIdestado(solicitud.getIdestado());
                     existing.setIdtipoprestamo(solicitud.getIdtipoprestamo());
-                    return solicitudRepository.save(existing);
+                    return solicitudRepository.save(existing)
+                            .flatMap(saved -> {
+                                if (solicitud.getIdestado() != null &&
+                                        (solicitud.getIdestado().equals(1L) || solicitud.getIdestado().equals(3L))) {
+                                    String estado = solicitud.getIdestado().equals(1L) ? "Aprobado" : "Rechazado";
+                                    return notificacionPort.enviarNotificacion(saved.getEmail(), estado)
+                                            .thenReturn(saved);
+                                }
+                                return Mono.just(saved);
+                            });
                 })
                 .switchIfEmpty(Mono.error(new SolicitudUpdateException(id)))
                 .doOnSuccess(u -> log.info(SolicitudLogEnum.SOLICITUD_ACTUALIZADA.message() + id))

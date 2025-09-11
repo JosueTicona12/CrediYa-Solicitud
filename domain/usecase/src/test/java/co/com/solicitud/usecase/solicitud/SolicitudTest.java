@@ -4,6 +4,7 @@ import co.com.solicitud.model.solicitud.Solicitud;
 import co.com.solicitud.model.solicitud.SolicitudCreacion;
 import co.com.solicitud.model.solicitud.Usuario;
 import co.com.solicitud.model.solicitud.gateways.SolicitudRepository;
+import co.com.solicitud.model.solicitud.port.NotificacionPort;
 import co.com.solicitud.model.solicitud.port.UsuarioPort;
 import exceptions.*;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,9 @@ class SolicitudTest {
 
     @Mock
     private UsuarioPort usuarioPort;
+
+    @Mock
+    private NotificacionPort notificacionPort;
 
     @InjectMocks
     private SolicitudUseCase useCase;
@@ -237,6 +241,24 @@ class SolicitudTest {
         verify(solicitudRepository).findById(1L);
         verify(solicitudRepository).save(any(Solicitud.class));
     }
+    @Test
+    void updateSolicitud_enviaNotificacionCuandoEstadoFinal() {
+        var solicitud = new Solicitud();
+        solicitud.setIdestado(3L);
+        solicitud.setEmail("final@test.com");
+        when(solicitudRepository.findById(1L)).thenReturn(Mono.just(new Solicitud()));
+        when(solicitudRepository.save(any(Solicitud.class)))
+                .thenAnswer(inv -> Mono.just(inv.getArgument(0)));
+
+        StepVerifier.create(useCase.updateSolicitud(solicitud, 1L))
+                .expectNextMatches(s -> s.getIdestado().equals(3L))
+                .verifyComplete();
+
+        verify(solicitudRepository).findById(1L);
+        verify(solicitudRepository).save(any(Solicitud.class));
+        verify(notificacionPort).enviarNotificacion("final@test.com", "Aprobado");
+    }
+
 
     @Test
     void updateSolicitud_errorIdNulo() {

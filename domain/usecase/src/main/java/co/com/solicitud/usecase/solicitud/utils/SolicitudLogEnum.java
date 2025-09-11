@@ -21,7 +21,10 @@ public enum SolicitudLogEnum {
     PETICION_OBTENER_TODAS("Handler - Recibida petición de obtener todas las solicitudes"),
     PETICION_REVISION("Handler - Recibida petición de obtener solicitudes para revisión"),
     PETICION_OBTENER_ID("Handler - Recibida petición de obtener solicitud con id "),
-    PETICION_ELIMINAR("Handler - Recibida petición de eliminar solicitud con id ");
+    PETICION_ELIMINAR("Handler - Recibida petición de eliminar solicitud con id "),
+    DECIDIR_SOLICITUD("UseCase - Cambiando estado de solicitud con id "),
+    ERROR_DECIDIR_SOLICITUD("Error cambiando estado de solicitud con id "),
+    PETICION_DECIDIR("Handler - Recibida petición de cambio de estado de solicitud");
     private final String message;
 
     SolicitudLogEnum(String message) {

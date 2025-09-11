@@ -36,11 +36,20 @@ routes:
     solicitudesById: "/api/v1/solicitudes/{id}"
     solicitudesRevision: "/api/v1/solicitudes/revision"
 
+aws:
+  region: us-east-2
+  accessKeyId: ${AWS_ACCESS_KEY_ID:}
+  secretAccessKey: ${AWS_SECRET_ACCESS_KEY:}
+
 adapters:
   r2dbc:
     url: ${SPRING_R2DBC_URL}
     username: ${SPRING_R2DBC_USERNAME}
     password: ${SPRING_R2DBC_PASSWORD}
+  sqs:
+    queueUrl: https://sqs.us-east-2.amazonaws.com/485658242518/cola-notificaciones-solicitud
+
+
 
 logging:
   level:
