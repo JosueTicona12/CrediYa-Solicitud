@@ -12,6 +12,6 @@ import java.time.LocalDateTime;
 @Builder
 public class SuccessResponse {
     private LocalDateTime timestamp;
-    private int status;
+    private String status;
     private String message;
 }

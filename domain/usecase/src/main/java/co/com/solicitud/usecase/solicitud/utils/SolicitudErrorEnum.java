@@ -18,7 +18,10 @@ public enum SolicitudErrorEnum {
     ERROR_VALIDACION("Error de validación: %s"),
     EMAIL_VACIO("El campo email esta vacio %s"),
     TOKEN_INVALIDO_CLIENTE("Token inválido: se requiere ser CLIENTE"),
+    EMAIL_OBLIGATORIO("El email es obligatorio"),
+    IDESTADO_OBLIGATORIO("El idestado es obligatorio"),
     TOKEN_INVALIDO_ASESOR("Token inválido: se requiere ser ASESOR");
+
 
     private final String message;
 
