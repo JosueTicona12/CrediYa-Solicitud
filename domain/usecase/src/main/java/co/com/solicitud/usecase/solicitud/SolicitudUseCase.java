@@ -77,7 +77,6 @@ public class SolicitudUseCase {
         if (solicitud == null) {
             return Mono.error(new SolicitudValidationException(SolicitudErrorEnum.SOLICITUD_NULA.message()));
         }
-
         return solicitudRepository.findById(id)
                 .switchIfEmpty(Mono.error(new SolicitudNotFoundException(id)))
                 .flatMap(existing -> {
