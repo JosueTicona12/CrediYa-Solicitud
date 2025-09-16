@@ -12,4 +12,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
     implementation 'com.auth0:java-jwt:4.4.0'
     implementation 'software.amazon.awssdk:sqs:2.33.5'
-    implementation 'software.amazon.awssdk:netty-nio-client:2.25.32'}
+    implementation 'software.amazon.awssdk:netty-nio-client:2.25.32'
+    implementation 'com.amazonaws:aws-lambda-java-core:1.2.3'
+    implementation 'com.amazonaws:aws-lambda-java-events:3.11.3'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+}

@@ -17,4 +17,5 @@ public class Solicitud {
     private String documento;
     private Long idestado;
     private Long idtipoprestamo;
+    private Boolean solAut;
 }

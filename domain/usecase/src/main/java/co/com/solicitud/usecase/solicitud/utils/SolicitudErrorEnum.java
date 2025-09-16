@@ -5,6 +5,8 @@ public enum SolicitudErrorEnum {
     DOCUMENTO_OBLIGATORIO("El documento es obligatorio"),
     MONTO_INVALIDO("El monto debe ser > 0"),
     PLAZO_INVALIDO("El plazo debe ser una fecha futura"),
+    TIPO_PRESTAMO_OBLIGATORIO("El tipo de préstamo es obligatorio"),
+    TIPO_PRESTAMO_NO_ENCONTRADO("El tipo de préstamo no existe"),
     USUARIO_INACTIVO("El usuario está inactivo"),
     USUARIO_EMAIL_INVALIDO("El usuario no tiene email válido"),
     TOKEN_NO_PERTENECE("El token no pertenece al usuario"),

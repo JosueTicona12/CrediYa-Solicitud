@@ -18,8 +18,19 @@ public class UsuariosClientConfig {
                 .responseTimeout(Duration.ofSeconds(5))
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 3000);
 
+        String sanitizedBase = baseUrl == null ? "" : baseUrl.trim();
+        if (sanitizedBase.isEmpty()) {
+            sanitizedBase = "http://localhost:8081";
+        }
+        if (sanitizedBase.endsWith("/")) {
+            sanitizedBase = sanitizedBase.substring(0, sanitizedBase.length() - 1);
+        }
+        if (!sanitizedBase.endsWith("/api/v1")) {
+            sanitizedBase = sanitizedBase + "/api/v1";
+        }
+
         return WebClient.builder()
-                .baseUrl("http://localhost:8081/api/v1/")
+                .baseUrl(sanitizedBase)
                 .clientConnector(new ReactorClientHttpConnector(http))
                 .build();
     }

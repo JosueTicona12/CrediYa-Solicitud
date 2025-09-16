@@ -6,6 +6,8 @@ import co.com.solicitud.model.solicitud.SolicitudEstadoUpdate;
 import co.com.solicitud.model.solicitud.gateways.SolicitudRepository;
 import co.com.solicitud.model.solicitud.port.NotificacionPort;
 import co.com.solicitud.model.solicitud.port.UsuarioPort;
+import co.com.solicitud.model.tipoprestamo.TipoPrestamo;
+import co.com.solicitud.model.tipoprestamo.gateways.TipoPrestamoRepository;
 import co.com.solicitud.usecase.solicitud.utils.SolicitudErrorEnum;
 import co.com.solicitud.usecase.solicitud.utils.SolicitudLogEnum;
 import exceptions.*;
@@ -24,6 +26,11 @@ public class SolicitudUseCase {
     private final SolicitudRepository solicitudRepository;
     private final UsuarioPort usuarioPort;
     private final NotificacionPort notificacionPort;
+    private final TipoPrestamoRepository tipoPrestamoRepository;
+
+    private static final long ESTADO_APROBADO_AUTOMATICO = 1L;
+    private static final long ESTADO_EN_REVISION = 2L;
+    private static final long TIPO_PRESTAMO_POR_DEFECTO = 1L;
 
     public Mono<Solicitud> crearSolicitud(SolicitudCreacion creacion, String emailToken) {
 
@@ -48,7 +55,7 @@ public class SolicitudUseCase {
                     if (email == null || email.isBlank()) {
                         return Mono.error(new SolicitudValidationException(SolicitudErrorEnum.USUARIO_EMAIL_INVALIDO.message()));
                     }
-                    if (emailToken == null || !email.equalsIgnoreCase(emailToken)) {
+                    if (!email.equalsIgnoreCase(emailToken)) {
                         return Mono.error(new SolicitudException(SolicitudErrorEnum.TOKEN_NO_PERTENECE.message()));
                     }
                     return solicitudRepository.findByEmail(email)
@@ -56,16 +63,29 @@ public class SolicitudUseCase {
                                     new SolicitudException(String.format(SolicitudErrorEnum.SOLICITUD_EXISTE.message(), email))
                             ))
                             .switchIfEmpty(Mono.defer(() -> {
-                                Solicitud solicitud = new Solicitud();
-                                solicitud.setMonto(creacion.monto());
-                                solicitud.setPlazo(creacion.plazo());
-                                solicitud.setEmail(email);
-                                solicitud.setIdestado(creacion.idestado());
-                                solicitud.setIdtipoprestamo(1L); // estado inicial (ejemplo)
-                                return solicitudRepository.save(solicitud);
+                                Long tipoPrestamoId = creacion.idTipoPrestamo();
+                                if (tipoPrestamoId == null || tipoPrestamoId == 0L) {
+                                    tipoPrestamoId = TIPO_PRESTAMO_POR_DEFECTO;
+                                }
+                                final Long finalTipoPrestamoId = tipoPrestamoId;
+                                return tipoPrestamoRepository.findById(finalTipoPrestamoId)
+                                        .switchIfEmpty(Mono.error(new SolicitudValidationException(
+                                                SolicitudErrorEnum.TIPO_PRESTAMO_NO_ENCONTRADO.message())))
+                                        .flatMap(tipoPrestamo -> {
+                                            Solicitud solicitud = new Solicitud();
+                                            solicitud.setMonto(creacion.monto());
+                                            solicitud.setPlazo(creacion.plazo());
+                                            solicitud.setEmail(email);
+                                            solicitud.setDocumento(creacion.documento());
+                                            solicitud.setIdtipoprestamo(tipoPrestamo.getId());
+                                            Long estadoInicial = getALong(creacion, tipoPrestamo);
+                                            solicitud.setIdestado(estadoInicial);
+                                            return solicitudRepository.save(solicitud);
+                                        });
                             }));
                 });
     }
+
 
     public Mono<Solicitud> updateSolicitud(Solicitud solicitud, Long id) {
 
@@ -175,5 +195,17 @@ public class SolicitudUseCase {
 
     public Flux<Solicitud> findByIdestadoIn(Collection<Long> estados) {
         return solicitudRepository.findByIdestadoIn(estados);
+    }
+
+    private static Long getALong(SolicitudCreacion creacion, TipoPrestamo tipoPrestamo) {
+        Long estadoInicial;
+        if (Boolean.TRUE.equals(tipoPrestamo.getSolAut())) {
+            estadoInicial = ESTADO_APROBADO_AUTOMATICO;
+        } else if (creacion.idestado() != null && !creacion.idestado().equals(ESTADO_APROBADO_AUTOMATICO)) {
+            estadoInicial = creacion.idestado();
+        } else {
+            estadoInicial = ESTADO_EN_REVISION;
+        }
+        return estadoInicial;
     }
 }

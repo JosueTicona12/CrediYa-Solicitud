@@ -1,5 +1,6 @@
-package co.com.solicitud.api.config;
+package co.com.solicitud.api.exception;
 
+import co.com.solicitud.api.config.ErrorResponse;
 import co.com.solicitud.usecase.solicitud.utils.SolicitudStatusEnum;
 import exceptions.SolicitudDeleteException;
 import exceptions.SolicitudNotFoundException;
@@ -8,13 +9,13 @@ import exceptions.SolicitudValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 
-@RestControllerAdvice
+@Component
 public class GlobalExceptionHandler {
     private Mono<ResponseEntity<ErrorResponse>> buildErrorResponse(
             Exception ex,

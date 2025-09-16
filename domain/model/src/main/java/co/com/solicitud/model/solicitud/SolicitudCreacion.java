@@ -5,6 +5,8 @@ public record SolicitudCreacion(
         Integer monto,
         java.time.LocalDate plazo,
         Long idestado,
-        Long idTipoPrestamo) {
+        Long idTipoPrestamo,
+        boolean solAut
+) {
 
 }
