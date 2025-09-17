@@ -22,7 +22,14 @@ public enum SolicitudErrorEnum {
     TOKEN_INVALIDO_CLIENTE("Token inválido: se requiere ser CLIENTE"),
     EMAIL_OBLIGATORIO("El email es obligatorio"),
     IDESTADO_OBLIGATORIO("El idestado es obligatorio"),
-    TOKEN_INVALIDO_ASESOR("Token inválido: se requiere ser ASESOR");
+    TOKEN_INVALIDO_ASESOR("Token inválido: se requiere ser ASESOR"),
+    CAPACIDAD_REQUEST_NULO("La solicitud para calcular la capacidad es obligatoria"),
+    CAPACIDAD_INGRESOS_INVALIDOS("Los ingresos totales deben ser mayores a cero"),
+    CAPACIDAD_MONTO_NUEVO_INVALIDO("El monto del nuevo préstamo debe ser mayor a cero"),
+    CAPACIDAD_TASA_INVALIDA("La tasa de interés mensual debe ser mayor o igual a cero"),
+    CAPACIDAD_PLAZO_INVALIDO("El plazo en meses debe ser mayor a cero"),
+    CAPACIDAD_PRESTAMO_INVALIDO("Los préstamos activos deben tener monto, tasa y plazo válidos"),
+    CAPACIDAD_ERROR_GENERAL("Ocurrió un error al calcular la capacidad de endeudamiento");
 
 
     private final String message;

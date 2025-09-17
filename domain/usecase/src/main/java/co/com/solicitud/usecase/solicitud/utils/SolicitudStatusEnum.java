@@ -11,6 +11,8 @@ public enum SolicitudStatusEnum {
     SOLICITUD_NO_ACTUALIZADA("SOLI-008"),
     SOLICITUD_NO_ELIMINADA("SOLI-009"),
     UNAUTHORIZED("SOLI-010"),
+    CAPACIDAD_CALCULADA("CAP-001"),
+    CAPACIDAD_VALIDACION_ERROR("CAP-002"),
     ERROR("SOLI-999");
 
     private final String code;

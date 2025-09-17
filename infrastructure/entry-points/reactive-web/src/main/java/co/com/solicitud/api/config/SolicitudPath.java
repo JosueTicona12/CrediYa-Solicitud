@@ -11,5 +11,5 @@ public class SolicitudPath {
     private String solicitudes;
     private String solicitudesById;
     private String solicitudesRevision;
-    private String calcularCapacidad;
+    private String capacidadEndeudamiento;
 }

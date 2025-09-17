@@ -1,6 +1,8 @@
 package co.com.solicitud.api;
 
+import co.com.solicitud.api.config.CapacidadCalculoResponse;
 import co.com.solicitud.api.config.SolicitudPath;
+import co.com.solicitud.model.capacidad.CapacidadEndeudamientoRequest;
 import co.com.solicitud.model.solicitud.Solicitud;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -138,6 +140,26 @@ public class RouterRest {
                     )
             ),
             @RouterOperation(
+                    path = "/api/v1/calcular-capacidad",
+                    method = RequestMethod.POST,
+                    beanClass = Handler.class,
+                    beanMethod = "listenCalcularCapacidad",
+                    operation = @Operation(
+                            operationId = "calcularCapacidadEndeudamiento",
+                            summary = "Calcula la capacidad de endeudamiento de un solicitante",
+                            requestBody = @RequestBody(
+                                    required = true,
+                                    description = "Datos para calcular la capacidad de endeudamiento",
+                                    content = @Content(schema = @Schema(implementation = CapacidadEndeudamientoRequest.class))
+                            ),
+                            responses = @ApiResponse(
+                                    responseCode = "200",
+                                    description = "Cálculo realizado",
+                                    content = @Content(schema = @Schema(implementation = CapacidadCalculoResponse.class))
+                            )
+                    )
+            ),
+            @RouterOperation(
                     path = "/solicitudes/{id}",
                     method = RequestMethod.GET,
                     beanClass = Handler.class,
@@ -172,6 +194,7 @@ public class RouterRest {
                 .andRoute(DELETE(solicitudPath.getSolicitudesById()), solicitudHandler::listenDeleteSolicitud)
                 .andRoute(GET(solicitudPath.getSolicitudes()), solicitudHandler::listenGetAllSolicitud)
                 .andRoute(GET(solicitudPath.getSolicitudesRevision()), solicitudHandler::listenGetSolicitudesRevision)
-                .andRoute(GET(solicitudPath.getSolicitudesById()), solicitudHandler::listenSolicitudById);
+                .andRoute(GET(solicitudPath.getSolicitudesById()), solicitudHandler::listenSolicitudById)
+                .andRoute(POST(solicitudPath.getCapacidadEndeudamiento()), solicitudHandler::listenCalcularCapacidad);
     }
 }

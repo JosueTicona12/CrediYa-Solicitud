@@ -1,10 +1,14 @@
 package co.com.solicitud.api;
 
+import co.com.solicitud.api.config.CapacidadCalculoResponse;
 import co.com.solicitud.api.config.ErrorResponse;
 import co.com.solicitud.api.config.SuccessResponse;
 import co.com.solicitud.api.security.JwtUtil;
+import co.com.solicitud.model.capacidad.CapacidadEndeudamientoRequest;
 import co.com.solicitud.model.solicitud.Solicitud;
 import co.com.solicitud.model.solicitud.SolicitudCreacion;
+import co.com.solicitud.usecase.capacidad.CapacidadUseCase;
+import co.com.solicitud.usecase.capacidad.utils.CapacidadLogEnum;
 import co.com.solicitud.usecase.solicitud.SolicitudUseCase;
 import co.com.solicitud.usecase.solicitud.utils.SolicitudErrorEnum;
 import co.com.solicitud.usecase.solicitud.utils.SolicitudLogEnum;
@@ -12,6 +16,7 @@ import co.com.solicitud.usecase.solicitud.utils.SolicitudStatusEnum;
 import exceptions.SolicitudDeleteException;
 import exceptions.SolicitudNotFoundException;
 import exceptions.SolicitudUpdateException;
+import exceptions.SolicitudValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -33,6 +38,7 @@ import java.util.Map;
 public class Handler {
 
     private final SolicitudUseCase solicitudUseCase;
+    private final CapacidadUseCase capacidadUseCase;
 
     public Mono<ServerResponse> listenSaveSolicitud(ServerRequest req) {
         String authHeader = req.headers().firstHeader(HttpHeaders.AUTHORIZATION);
@@ -204,6 +210,36 @@ public class Handler {
                                 SolicitudStatusEnum.SOLICITUD_NO_ELIMINADA,
                                 e.getMessage(),
                                 request));
+    }
+
+    public Mono<ServerResponse> listenCalcularCapacidad(ServerRequest request) {
+        log.trace(CapacidadLogEnum.PETICION_CALCULO.message());
+
+        return request.bodyToMono(CapacidadEndeudamientoRequest.class)
+                .switchIfEmpty(Mono.error(new SolicitudValidationException(SolicitudErrorEnum.CAPACIDAD_REQUEST_NULO.message())))
+                .flatMap(capacidadUseCase::calcularCapacidad)
+                .flatMap(resultado -> {
+                    CapacidadCalculoResponse response = CapacidadCalculoResponse.builder()
+                            .status(SolicitudStatusEnum.CAPACIDAD_CALCULADA.code())
+                            .message("Capacidad de endeudamiento calculada correctamente")
+                            .data(resultado)
+                            .build();
+                    return ServerResponse.ok()
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(response);
+                })
+                .onErrorResume(SolicitudValidationException.class,
+                        e -> buildErrorResponse(HttpStatus.BAD_REQUEST,
+                                SolicitudStatusEnum.CAPACIDAD_VALIDACION_ERROR,
+                                e.getMessage(),
+                                request))
+                .onErrorResume(Exception.class, e -> {
+                    log.error("Error calculando capacidad de endeudamiento", e);
+                    return buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR,
+                            SolicitudStatusEnum.ERROR,
+                            SolicitudErrorEnum.CAPACIDAD_ERROR_GENERAL.message(),
+                            request);
+                });
     }
 
     private Mono<ServerResponse> buildErrorResponse(HttpStatus status, SolicitudStatusEnum business, String message, ServerRequest request) {
